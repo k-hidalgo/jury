@@ -148,78 +148,102 @@ func ParseProjectCsv(content string, hasHeader bool, db *mongo.Database) ([]*mod
 	return projects, nil
 }
 
-// TODO: After event, devpost will add a column between 0 and 1, the "auto assigned table numbers" TT - idk what to do abt this
-// Generate a workable CSV for Jury based on the output CSV from Devpost
-// Columns:
-//  0. Project Title - title
-//  1. Submission Url - url
-//  2. Project Status - Draft or Submitted (ignore drafts)
-//  3. Judging Status - ignore
-//  4. Highest Step Completed - ignore
-//  5. Project Created At - ignore
-//  6. About The Project - description
-//  7. "Try it out" Links" - try_link
-//  8. Video Demo Link - video_link
-//  9. Opt-In Prizes - challenge_list
-//  10. Built With - ignore
-//  11. Notes - ignore
-//  12. Team Colleges/Universities - ignore
-//  13. Additional Team Member Count - ignore
-//  14. (and remiaining rows) Custom questions - custom_questions (ignore for now)
+// ParseDevpostCSV imports projects using column names rather than positions.
 func ParseDevpostCSV(content string, db *mongo.Database) ([]*models.Project, error) {
-	r := csv.NewReader(strings.NewReader(content))
-
-	// Empty CSV file
-	if content == "" {
+	if strings.TrimSpace(content) == "" {
 		return []*models.Project{}, nil
 	}
 
-	// Skip the first line
-	r.Read()
+	// Remove an optional UTF-8 byte-order mark before parsing.
+	content = strings.TrimPrefix(content, "\uFEFF")
+	r := csv.NewReader(strings.NewReader(content))
 
-	// Get the starting table number
+	headers, err := r.Read()
+	if err != nil {
+		return nil, fmt.Errorf("could not read Devpost CSV headers: %w", err)
+	}
+
+	normalize := func(value string) string {
+		return strings.ToLower(strings.TrimSpace(value))
+	}
+
+	columns := make(map[string]int)
+	for i, header := range headers {
+		key := normalize(header)
+		if key == "" {
+			continue
+		}
+		if _, exists := columns[key]; exists {
+			return nil, fmt.Errorf("duplicate Devpost CSV column: %q", header)
+		}
+		columns[key] = i
+	}
+
+	required := []string{
+		"Project Title",
+		"Submission Url",
+		"Project Status",
+		"About The Project",
+		`"Try it out" Links`,
+		"Video Demo Link",
+		"Opt-In Prizes",
+	}
+
+	for _, header := range required {
+		if _, exists := columns[normalize(header)]; !exists {
+			return nil, fmt.Errorf(
+				"missing required Devpost CSV column: %q; upload the original Projects data export",
+				header,
+			)
+		}
+	}
+
+	field := func(record []string, header string) string {
+		return strings.TrimSpace(record[columns[normalize(header)]])
+	}
+
 	tableNum, err := database.GetMaxTableNum(db, context.Background())
 	if err != nil {
 		return nil, err
 	}
 
-	// Get options from the database
 	options, err := database.GetOptions(db, context.Background())
 	if err != nil {
 		return nil, err
 	}
 
-	// Read the CSV file, looping through each record
-	var projects []*models.Project
-	for {
+	projects := []*models.Project{}
+	for row := 2; ; row++ {
 		record, err := r.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid Devpost CSV record %d: %w", row, err)
 		}
 
-		// Make sure the record has 14 or more elements (see above)
-		if len(record) < 13 {
-			return nil, fmt.Errorf("record does not contain 14 or more elements (invalid devpost csv): '%s'", strings.Join(record, ","))
-		}
-
-		// If the project is a Draft, skip it
-		if record[2] == "Draft" {
+		if strings.EqualFold(field(record, "Project Status"), "Draft") {
 			continue
 		}
 
-		// Split challenge list into a slice and trim them
-		challengeList := strings.Split(record[9], ",")
-		if record[9] == "" {
-			challengeList = []string{}
-		}
-		for i := range challengeList {
-			challengeList[i] = strings.TrimSpace(challengeList[i])
+		name := field(record, "Project Title")
+		projectURL := field(record, "Submission Url")
+		if name == "" || projectURL == "" {
+			return nil, fmt.Errorf(
+				"Devpost CSV record %d is missing a project title or submission URL",
+				row,
+			)
 		}
 
-		// If the challenge list contains the ignore track, skip the project
+		// Preserve Jury's existing comma-separated prize format.
+		challengeList := []string{}
+		for _, challenge := range strings.Split(field(record, "Opt-In Prizes"), ",") {
+			challenge = strings.TrimSpace(challenge)
+			if challenge != "" && !slices.Contains(challengeList, challenge) {
+				challengeList = append(challengeList, challenge)
+			}
+		}
+
 		ignore := false
 		for _, ignoreTrack := range options.IgnoreTracks {
 			if slices.Contains(challengeList, ignoreTrack) {
@@ -231,18 +255,15 @@ func ParseDevpostCSV(content string, db *mongo.Database) ([]*models.Project, err
 			continue
 		}
 
-		// Increment the table number
 		tableNum++
-
-		// Add project to slice
 		projects = append(projects, models.NewProject(
-			record[0],
+			name,
 			tableNum,
 			util.GroupFromTable(options, tableNum),
-			record[6],
-			record[1],
-			record[7],
-			record[8],
+			field(record, "About The Project"),
+			projectURL,
+			field(record, `"Try it out" Links`),
+			field(record, "Video Demo Link"),
 			challengeList,
 		))
 	}
