@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';import ConfirmPopup from '../../ConfirmPopup';
+import { useEffect, useState } from 'react';
+import ConfirmPopup from '../../ConfirmPopup';
 import { useAdminStore } from '../../../store';
 import TextInput from '../../TextInput';
 import TextArea from '../../TextArea';
