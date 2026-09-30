@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import ConfirmPopup from '../../ConfirmPopup';
+import { useEffect, useState } from 'react';import ConfirmPopup from '../../ConfirmPopup';
 import { useAdminStore } from '../../../store';
 import TextInput from '../../TextInput';
 import TextArea from '../../TextArea';
@@ -26,6 +25,20 @@ const EditProjectPopup = (props: EditProjectPopupProps) => {
     const [url, setUrl] = useState(props.project.url);
     const [tryLink, setTryLink] = useState(props.project.try_link);
     const [videoLink, setVideoLink] = useState(props.project.video_link);
+    // Restore saved values whenever the editor opens or closes.
+    // Background project refreshes must not overwrite an active edit.
+    useEffect(() => {
+        if (props.enabled) {
+            return;
+        }
+    
+        setName(props.project.name);
+        setDescription(props.project.description);
+        setChallengeList(props.project.challenge_list.join(', '));
+        setUrl(props.project.url);
+        setTryLink(props.project.try_link);
+        setVideoLink(props.project.video_link);
+    }, [props.enabled, props.project]);
 
     const onSubmit = async () => {
         setIsSubmitting(true);
