@@ -31,7 +31,7 @@ const JudgeQrCodes = () => {
                         <div className='flex flex-col-reverse mt-6 md:mt-0 md:flex-row justify-center lg:justify-start gap-4'>
                             <Button
                                 type="primary"
-                                href={`/admin/qr?track=${track}`}
+                                href={`/admin/qr?track=${encodeURIComponent(track)}`}
                                 className="rounded-md"
                             >
                                 {track} Track Judges
