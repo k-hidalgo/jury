@@ -7,6 +7,7 @@ import ConfirmPopup from '../../components/ConfirmPopup';
 import Loading from '../../components/Loading';
 import Checkbox from '../../components/Checkbox';
 import TextInput from '../../components/TextInput';
+import NameListInput from '../../components/NameListInput';
 import SelectionButton from '../../components/SelectionButton';
 import { useClockStore, useOptionsStore } from '../../store';
 import ChallengeBlock from '../../components/admin/ChallengeBlock';
@@ -126,7 +127,7 @@ const AdminSettings = () => {
         setSwitchingMode(newOptions.switching_mode);
         setAutoSwitchProp(newOptions.auto_switch_prop);
         setJudgeTracks(newOptions.judge_tracks);
-        setTracks(newOptions.tracks.join(', '));
+        setTracks(newOptions.tracks.join('\n'));
         setTrackViews(newOptions.track_views.join(', '));
         setGroupNames(newOptions.group_names.join(', '));
         setIgnoreTracks(newOptions.ignore_tracks.join(', '));
@@ -274,7 +275,7 @@ const AdminSettings = () => {
     const updateTracks = async () => {
         // Split tracks by comma and remove empty strings
         const filteredTracks = tracks
-            .split(',')
+            .split(/\r?\n/)
             .map((track) => track.trim())
             .filter((track) => track !== '');
 
@@ -293,7 +294,7 @@ const AdminSettings = () => {
     const updateTrackViews = async () => {
         const views = trackViews.split(',').map((v) => parseInt(v.trim()));
         const ts = tracks
-            .split(',')
+            .split(/\r?\n/)
             .map((t) => t.trim())
             .filter((t) => t !== '');
         if (views.some((v) => isNaN(v) || v < 1)) {
@@ -755,14 +756,10 @@ const AdminSettings = () => {
                                 be judged!
                             </Description>
                             <ChallengeBlock />
-                            <TextInput
-                                text={tracks}
-                                setText={setTracks}
+                            <NameListInput
                                 label="List of Tracks"
-                                placeholder="Track 1, Track 2, ..."
-                                large
-                                full
-                                className="my-2"
+                                value={tracks}
+                                setValue={setTracks}
                             />
                             <SettingsButton disabled={running} onClick={updateTracks}>
                                 Update Tracks
