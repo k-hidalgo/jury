@@ -755,7 +755,12 @@ const AdminSettings = () => {
                                 under the 'Opt-In Prizes' category. Only the tracks listed here will
                                 be judged!
                             </Description>
-                            <ChallengeBlock />
+                            <ChallengeBlock
+                                excludedTracks={tracks
+                                    .split(/\r?\n/)
+                                    .map((track) => track.trim())
+                                    .filter((track) => track !== '')}
+                            />
                             <NameListInput
                                 label="List of Tracks"
                                 value={tracks}
