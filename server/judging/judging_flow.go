@@ -320,10 +320,6 @@ func FindAvailableItems(db *mongo.Database, ctx context.Context, judge *models.J
 		projects = freeProjects
 	}
 
-	// If track judging, ignore last conditions
-	if judge.Track != "" {
-		return projects, nil
-	}
 
 	// Group checking logic
 	if options.MultiGroup {
@@ -352,6 +348,10 @@ func FindAvailableItems(db *mongo.Database, ctx context.Context, judge *models.J
 				break
 			}
 		}
+	}
+	// Track judges use the group-filtered projects without general view balancing.
+	if judge.Track != "" {
+	    return projects, nil
 	}
 
 	// Get the minimum number of views of the remaining projects
