@@ -92,7 +92,8 @@ const JudgesTable = () => {
                 sortFunc = (a, b) => (a.last_activity - b.last_activity) * asc;
                 break;
             case JudgeSortField.Curr:
-                sortFunc = (a, b) => a.current.localeCompare(b.current) * asc;
+                sortFunc = (a, b) =>
+                    (a.current ?? '').localeCompare(b.current ?? '') * asc;
                 break;
         }
         setJudges(filteredJudges.toSorted(sortFunc));
