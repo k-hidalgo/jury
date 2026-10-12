@@ -115,7 +115,7 @@ const JudgesTable = () => {
                     sortField={JudgeSortField.Code}
                     sortState={sortState}
                 />
-                {options.multi_group && selectedTrack === '' && (
+                {options.multi_group && (
                     <HeaderEntry
                         name="Group"
                         updateSort={updateSort}
