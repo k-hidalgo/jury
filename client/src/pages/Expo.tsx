@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Container from '../components/Container';
+import Back from '../components/Back';
 import { getRequest } from '../api';
 import { errorAlert } from '../util';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -115,6 +116,7 @@ const Expo = () => {
                 />
             </Helmet>
             <Container noCenter>
+                <Back location="/" />
                 <h1 className="mt-4 text-4xl text-center font-bold">Project Expo</h1>
                 <h2 className="text-2xl text-center font-bold text-primary">
                     {import.meta.env.VITE_JURY_NAME}
