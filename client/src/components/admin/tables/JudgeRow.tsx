@@ -99,7 +99,7 @@ const JudgeRow = ({ judge, idx }: JudgeRowProps) => {
                 </td>
                 <td>{judge.name}</td>
                 <td className="text-center">{judge.code}</td>
-                {options.multi_group && selectedTrack === '' && (
+                {options.multi_group && (
                     <td className="text-center">{judge.group}</td>
                 )}
                 <td className="text-center">{judge.seen}</td>
