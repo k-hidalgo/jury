@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Container from '../../components/Container';
 import JuryHeader from '../../components/JuryHeader';
-import Paragraph from '../../components/Paragraph';
+import Markdown from '../../components/Markdown';
 import Back from '../../components/Back';
 import { getRequest, putRequest } from '../../api';
 import { errorAlert } from '../../util';
@@ -97,7 +97,7 @@ const Project = () => {
                     setValue={setNotes}
                     className="mb-4"
                 />
-                <Paragraph text={project.description} className="text-black" />
+                <Markdown text={project.description} className="text-black" />
             </Container>
         </>
     );

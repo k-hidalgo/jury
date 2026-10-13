@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { twMerge } from 'tailwind-merge';
-import Paragraph from '../Paragraph';
+import Markdown from '../Markdown';
 import { getRequest } from '../../api';
 import { errorAlert } from '../../util';
 import { useGroupInfoStore } from '../../store';
@@ -55,7 +55,7 @@ const ProjectDisplay = (props: ProjectDisplayProps) => {
                     <span className="ml-4 text-lighter">[{groupNames[project.group]}]</span>
                 )}
             </h2>
-            <Paragraph className="text-light" text={project.description} />
+            <Markdown className="text-light" text={project.description} />
         </div>
     );
 };
