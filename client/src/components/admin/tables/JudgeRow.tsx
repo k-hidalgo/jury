@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { displayGroup, errorAlert, timeSince } from '../../../util';
+import { errorAlert, timeSince } from '../../../util';
 import DeletePopup from './DeletePopup';
 import EditJudgePopup from './EditJudgePopup';
 import { putRequest } from '../../../api';
@@ -7,6 +7,7 @@ import { useAdminStore, useAdminTableStore, useOptionsStore } from '../../../sto
 import { twMerge } from 'tailwind-merge';
 import ActionsDropdown from '../../ActionsDropdown';
 import MoveGroupPopup from './MoveGroupPopup';
+import GroupLabel from './GroupLabel';
 import JudgeRanksPopup from './JudgeRanksPopup';
 import { useNavigate } from 'react-router-dom';
 
@@ -100,7 +101,9 @@ const JudgeRow = ({ judge, idx }: JudgeRowProps) => {
                 <td>{judge.name}</td>
                 <td className="text-center">{judge.code}</td>
                 {options.multi_group && (
-                    <td className="text-center">{displayGroup(judge.group)}</td>
+                    <td className="text-center">
+                        <GroupLabel group={judge.group} names={options.group_names} />
+                    </td>
                 )}
                 <td className="text-center">{judge.seen}</td>
                 <td className="text-center">{idToProj(judge.current)}</td>

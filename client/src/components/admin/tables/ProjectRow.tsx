@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { displayGroup, errorAlert, timeSince } from '../../../util';
+import { errorAlert, timeSince } from '../../../util';
 import DeletePopup from './DeletePopup';
 import EditProjectPopup from './EditProjectPopup';
 import { useAdminStore, useAdminTableStore, useFlagsStore, useOptionsStore } from '../../../store';
@@ -8,6 +8,7 @@ import FlagsPopup from '../FlagsPopup';
 import { twMerge } from 'tailwind-merge';
 import ActionsDropdown from '../../ActionsDropdown';
 import MoveGroupPopup from './MoveGroupPopup';
+import GroupLabel from './GroupLabel';
 import MovePopup from './MovePopup';
 import ProjectNotesPopup from './ProjectNotesPopup';
 
@@ -137,7 +138,9 @@ const ProjectRow = ({ project, idx }: ProjectRowProps) => {
                 </td>
                 <td className="text-center py-1">Table {project.location}</td>
                 {options.multi_group && track === '' && (
-                    <td className="text-center">{displayGroup(project.group)}</td>
+                    <td className="text-center">
+                        <GroupLabel group={project.group} names={options.group_names} />
+                    </td>
                 )}
                 {track === '' && <td className="text-center">{project.score}</td>}
                 <td className="text-center">{stars}</td>
