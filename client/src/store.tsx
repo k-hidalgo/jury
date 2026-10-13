@@ -147,6 +147,7 @@ const useOptionsStore = create<OptionsStore>((set) => ({
         manual_switches: 0,
         deliberation: false,
         group_names: [],
+        proportional_judge_groups: false,
         ignore_tracks: [],
         block_reqs: false,
         max_req_per_min: 0,

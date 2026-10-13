@@ -274,121 +274,91 @@ func ResetBusyProjectListForJudge(db *mongo.Database, ctx context.Context, judge
 	return nil
 }
 
-// GetMinJudgeGroup returns the group with the fewest judges
-func GetMinJudgeGroup(db *mongo.Database, ctx context.Context) (int64, error) {
-	pipe := []gin.H{{"$match": gin.H{
-		"active": true,
-		"track":  "",
-	}}, {"$group": gin.H{
-		"_id":   "$group",
-		"count": gin.H{"$sum": 1},
-	}}}
-
-	cursor, err := db.Collection("judges").Aggregate(ctx, pipe)
+// countByGroup returns the number of documents in each group (0 to numGroups - 1) of a collection
+// that match the filter. Documents in groups outside of that range are ignored.
+func countByGroup(db *mongo.Database, ctx context.Context, collection string, match gin.H, numGroups int64) ([]int64, error) {
+	cursor, err := db.Collection(collection).Aggregate(ctx, []gin.H{
+		{"$match": match},
+		{"$group": gin.H{
+			"_id":   "$group",
+			"count": gin.H{"$sum": 1},
+		}},
+	})
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
-	groupCounts := make(map[int64]int64)
+	counts := make([]int64, numGroups)
 	for cursor.Next(ctx) {
-		var result map[string]any
+		var result struct {
+			Group int64 `bson:"_id"`
+			Count int64 `bson:"count"`
+		}
 		err := cursor.Decode(&result)
 		if err != nil {
-			return -1, err
+			return nil, err
 		}
-		groupCounts[result["_id"].(int64)] = int64(result["count"].(int32))
+		if result.Group >= 0 && result.Group < numGroups {
+			counts[result.Group] = result.Count
+		}
 	}
 
-	// Sort by count in ascending order
-	minGroups := util.SortMapByValue(groupCounts, false)
+	return counts, cursor.Err()
+}
 
-	// Get options
-	options, err := GetOptions(db, ctx)
+// getJudgeGroupWeights returns how heavily each group should be weighted when assigning judges
+func getJudgeGroupWeights(db *mongo.Database, ctx context.Context, options *models.Options) ([]float64, error) {
+	var projectCounts []int64
+	if options.ProportionalJudgeGroups {
+		var err error
+		projectCounts, err = countByGroup(db, ctx, "projects", gin.H{"active": true}, options.NumGroups)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return util.JudgeGroupWeights(options.NumGroups, options.ProportionalJudgeGroups, projectCounts, options.GroupSizes), nil
+}
+
+// GetMinJudgeGroup returns the group a single new judge should be assigned to
+func GetMinJudgeGroup(db *mongo.Database, ctx context.Context) (int64, error) {
+	groups, err := GetNextNJudgeGroups(db, ctx, 1, false)
 	if err != nil {
 		return -1, err
 	}
-
-	// Find all groups that aren't in minGroups
-	group := int64(-1)
-	for i := int64(0); i < options.NumGroups; i++ {
-		if _, ok := groupCounts[i]; !ok {
-			group = i
-			break
-		}
-	}
-
-	// If there are no groups that aren't in minGroups, use the first group
-	if group == -1 {
-		group = minGroups[0]
-	}
-
-	return group, nil
+	return groups[0], nil
 }
 
-// GetNextNJudgeGroups returns the next n groups to assign new judges to
+// GetNextNJudgeGroups returns the next n groups to assign new judges to.
 // The groups are chosen based on the current number of judges in each group,
-// with the goal to balance the number of judges in each group
-func GetNextNJudgeGroups(db *mongo.Database, ctx context.Context, n int, reset bool) ([]int64, error) { // Get options
+// with the goal to balance the number of judges in each group (in proportion to
+// the number of projects in each group if proportional judge groups are enabled).
+// If reset is true, the current judge counts are ignored.
+func GetNextNJudgeGroups(db *mongo.Database, ctx context.Context, n int, reset bool) ([]int64, error) {
 	// Get options
 	options, err := GetOptions(db, ctx)
 	if err != nil {
 		return nil, err
 	}
+	if options.NumGroups < 1 {
+		return make([]int64, n), nil
+	}
 
 	// Get the current number of judges in each group
-	var groupCounts map[int64]int64
-	if reset {
-		// Simply set all group counts to 0
-		groupCounts = make(map[int64]int64, options.NumGroups)
-	} else {
-		groupCounts = make(map[int64]int64)
-		cursor, err := db.Collection("judges").Aggregate(ctx, []gin.H{
-			{"$match": gin.H{
-				"active": true,
-				"track":  "",
-			}},
-			{"$group": gin.H{
-				"_id":   "$group",
-				"count": gin.H{"$sum": 1},
-			}},
-		})
+	judgeCounts := make([]int64, options.NumGroups)
+	if !reset {
+		judgeCounts, err = countByGroup(db, ctx, "judges", gin.H{"active": true, "track": ""}, options.NumGroups)
 		if err != nil {
 			return nil, err
 		}
-
-		for cursor.Next(ctx) {
-			var result map[string]any
-			err := cursor.Decode(&result)
-			if err != nil {
-				return nil, err
-			}
-			groupCounts[result["_id"].(int64)] = int64(result["count"].(int32))
-		}
-
-		// Find all groups that aren't in groups
-		for i := int64(0); i < options.NumGroups; i++ {
-			if _, ok := groupCounts[i]; !ok {
-				groupCounts[i] = 0
-			}
-		}
 	}
 
-	// Keep looping until we have enough groups
-	groupList := make([]int64, n)
-	for i := 0; i < n; i++ {
-		min := groupCounts[0]
-		minGroup := int64(0)
-		for group, count := range groupCounts {
-			if count < min {
-				min = count
-				minGroup = group
-			}
-		}
-		groupList[i] = minGroup
-		groupCounts[minGroup] -= 1
+	weights, err := getJudgeGroupWeights(db, ctx, options)
+	if err != nil {
+		return nil, err
 	}
 
-	return groupList, nil
+	return util.AllocateGroups(judgeCounts, weights, n), nil
 }
 
 // PutJudgesInGroups assigns judges to groups

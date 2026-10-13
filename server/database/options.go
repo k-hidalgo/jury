@@ -66,6 +66,9 @@ func UpdateOptions(db *mongo.Database, ctx context.Context, options *models.Opti
 	if options.GroupNames != nil {
 		update["group_names"] = *options.GroupNames
 	}
+	if options.ProportionalJudgeGroups != nil {
+		update["proportional_judge_groups"] = *options.ProportionalJudgeGroups
+	}
 	if options.IgnoreTracks != nil {
 		update["ignore_tracks"] = *options.IgnoreTracks
 	}

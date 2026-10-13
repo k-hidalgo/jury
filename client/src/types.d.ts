@@ -135,6 +135,7 @@ interface Options {
     manual_switches: number;
     deliberation: boolean;
     group_names: string[];
+    proportional_judge_groups: boolean;
     ignore_tracks: string[];
     block_reqs: boolean;
     max_req_per_min: number;

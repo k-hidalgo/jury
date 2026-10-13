@@ -97,6 +97,18 @@ func RunTests(context *util.Context) {
 				"Block Reqs Toggle":                   BlockReqsToggle,
 			},
 		},
+		{
+			Name:  "Multi-group Judge Assignment",
+			Setup: GroupJudgingTestSetup,
+			Tests: map[string]func(*util.Context) util.Result{
+				"Reassign Splits Judges Evenly":                  ReassignSplitsJudgesEvenly,
+				"New Judges Assigned Proportionally":             NewJudgesAssignedProportionally,
+				"Reassign Splits Judges Proportionally":          ReassignSplitsJudgesProportionally,
+				"Reassign After Changing Group Sizes":            ReassignAfterChangingGroupSizes,
+				"Proportional Uses Group Sizes Without Projects": ProportionalUsesGroupSizesWithoutProjects,
+				"Track Judges Not Assigned To Groups":            TrackJudgesNotAssignedToGroups,
+			},
+		},
 	}
 
 	totalErrors := 0

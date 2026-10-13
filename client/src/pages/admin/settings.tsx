@@ -83,6 +83,7 @@ const AdminSettings = () => {
     const [switchingMode, setSwitchingMode] = useState('auto');
     const [autoSwitchProp, setAutoSwitchProp] = useState(0.1);
     const [groupSizes, setGroupSizes] = useState('30, 30');
+    const [proportionalJudgeGroups, setProportionalJudgeGroups] = useState(false);
     const [judgeTracks, setJudgeTracks] = useState(false);
     const [tracks, setTracks] = useState<string>('');
     const [trackViews, setTrackViews] = useState('');
@@ -124,6 +125,7 @@ const AdminSettings = () => {
         setMultiGroup(newOptions.multi_group);
         setNumGroups(newOptions.num_groups);
         setGroupSizes(newOptions.group_sizes.join(', '));
+        setProportionalJudgeGroups(newOptions.proportional_judge_groups);
         setSwitchingMode(newOptions.switching_mode);
         setAutoSwitchProp(newOptions.auto_switch_prop);
         setJudgeTracks(newOptions.judge_tracks);
@@ -353,6 +355,20 @@ const AdminSettings = () => {
         await getOptions();
 
         alert('Number of groups updated!');
+    };
+
+    const toggleProportionalJudgeGroups = async () => {
+        const res = await postRequest<OkResponse>('/admin/options', 'admin', {
+            proportional_judge_groups: !proportionalJudgeGroups,
+        });
+        if (res.status !== 200 || res.data?.ok !== 1) {
+            errorAlert(res);
+            return;
+        }
+
+        setProportionalJudgeGroups(!proportionalJudgeGroups);
+        fetchOptions();
+        alert('Judge group assignment updated! Reassign judge groups to apply this to existing judges.');
     };
 
     const updateSwitchingMode = async (newMode: string) => {
@@ -636,7 +652,8 @@ const AdminSettings = () => {
                     <SubSection>Reassign Judge Groups</SubSection>
                     <Description>
                         Reassigns all judges to groups. The number of judges in each group will be
-                        kept as even as possible.
+                        kept as even as possible, or in proportion to the number of projects in
+                        each group if proportional judge assignment is enabled.
                     </Description>
                     <SettingsButton onClick={() => setJudgeReassignPopup(true)} type="gold">
                         Reassign
@@ -845,6 +862,31 @@ const AdminSettings = () => {
                                 className="my-2 mr-4"
                             />
                             <SettingsButton onClick={updateGroupSizes} disabled={running}>Update Sizes</SettingsButton>
+
+                            <SubSection>Judge Group Assignment</SubSection>
+                            <Description>
+                                By default, judges are split evenly across groups. Enable this to
+                                assign judges in proportion to the number of projects in each
+                                group instead, so larger groups get more judges (eg. groups of 60,
+                                30, and 30 projects with 12 judges get 6, 3, and 3 judges). If no
+                                projects have been added yet, the group sizes above are used. This
+                                applies to newly added judges; reassign judge groups to apply it to
+                                existing judges (eg. after changing group sizes).
+                            </Description>
+                            <Checkbox
+                                checked={proportionalJudgeGroups}
+                                onChange={toggleProportionalJudgeGroups}
+                                disabled={running}
+                            >
+                                Assign Judges Proportionally to Group Size
+                            </Checkbox>
+                            <SettingsButton
+                                onClick={() => setJudgeReassignPopup(true)}
+                                disabled={running}
+                                type="gold"
+                            >
+                                Reassign Judge Groups
+                            </SettingsButton>
 
                             <SubSection>Switching Mode</SubSection>
                             <Description>
@@ -1065,7 +1107,7 @@ const AdminSettings = () => {
                 title="Heads Up!"
                 red
             >
-                Are you sure you want to judge group numbers? This should NOT be done DURING
+                Are you sure you want to reassign judge group numbers? This should NOT be done DURING
                 judging; only beforehand!!
             </ConfirmPopup>
             <ConfirmPopup
