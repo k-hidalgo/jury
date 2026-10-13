@@ -108,6 +108,8 @@ func RunTests(context *util.Context) {
 				"Proportional Uses Group Sizes Without Projects": ProportionalUsesGroupSizesWithoutProjects,
 				"Track Judges Not Assigned To Groups":            TrackJudgesNotAssignedToGroups,
 				"Move Judge Group Validates Range":               MoveJudgeGroupValidatesRange,
+				"Projects Fill Groups By Size":                   ProjectsFillGroupsBySize,
+				"Move Project Group Uses Group Tables":           MoveProjectGroupUsesGroupTables,
 			},
 		},
 	}

@@ -692,24 +692,16 @@ func MoveProjectGroup(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting group max number: " + err.Error()})
 			return err
 		}
+
+		// If the group is empty, start at the group's first table
 		if currMaxNum == -1 {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting group max number"})
-			return errors.New("error getting group max number")
+			currMaxNum = util.GroupFirstTable(options, moveReq.Group) - 1
 		}
 
-		// Get maximum number for the given group
-		maxGroupNum := int64(0)
-		for i, size := range options.GroupSizes {
-			maxGroupNum += size
-			if int64(i) == moveReq.Group {
-				break
-			}
-		}
-
-		// Make sure the group has space (check for max group number and make sure it doesn't exceed)
-		if moveReq.Group < options.NumGroups-1 && currMaxNum >= maxGroupNum {
+		// Make sure the group has space (the last group holds any overflow)
+		if moveReq.Group < options.NumGroups-1 && currMaxNum >= util.GroupLastTable(options, moveReq.Group) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "group is full, cannot move project to provided group"})
-			return err
+			return errors.New("group is full, cannot move project to provided group")
 		}
 
 		// Move the project to the new group
@@ -830,22 +822,14 @@ func MoveSelectedProjectsGroup(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting group max number: " + err.Error()})
 			return err
 		}
+
+		// If the group is empty, start at the group's first table
 		if currMaxNum == -1 {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting group max number"})
-			return errors.New("error getting group max number")
+			currMaxNum = util.GroupFirstTable(options, moveReq.Group) - 1
 		}
 
-		// Get maximum number for the given group
-		maxGroupNum := int64(0)
-		for i, size := range options.GroupSizes {
-			maxGroupNum += size
-			if int64(i) == moveReq.Group {
-				break
-			}
-		}
-
-		// Check if the group has space (check for max group number and make sure it doesn't exceed)
-		if moveReq.Group < options.NumGroups-1 && currMaxNum+int64(len(moveReq.Items)) > maxGroupNum {
+		// Check if the group has space (the last group holds any overflow)
+		if moveReq.Group < options.NumGroups-1 && currMaxNum+int64(len(moveReq.Items)) > util.GroupLastTable(options, moveReq.Group) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "group is full, cannot move projects to provided group"})
 			return errors.New("group is full, cannot move projects to provided group")
 		}

@@ -426,3 +426,103 @@ func MoveJudgeGroupValidatesRange(context *util.Context) util.Result {
 
 	return util.ResultOk()
 }
+
+// ProjectsFillGroupsBySize verifies that projects are split into groups
+// according to the configured group sizes
+func ProjectsFillGroupsBySize(context *util.Context) util.Result {
+	defer resetGroupOptions(context)
+
+	if res := setupGroups(context, []int64{8, 2, 2}, 12, false); !res.Success {
+		return res
+	}
+	projectCounts, res := getProjectGroupCounts(context, 3)
+	if !res.Success {
+		return res
+	}
+	if !slices.Equal(projectCounts, []int64{8, 2, 2}) {
+		return util.NewResult(false, fmt.Sprintf("Projects not split by group sizes: got %v, want [8 2 2]", projectCounts))
+	}
+
+	// Changing the group sizes should move projects to match
+	sizesRes := util.PostRequest(context.Logger, "/admin/group-sizes", util.H{"group_sizes": []int64{4, 4, 4}}, util.AdminAuth())
+	if !util.IsOk(sizesRes) {
+		return util.NewResult(false, "Failed to set group sizes: "+sizesRes)
+	}
+	projectCounts, res = getProjectGroupCounts(context, 3)
+	if !res.Success {
+		return res
+	}
+	if !slices.Equal(projectCounts, []int64{4, 4, 4}) {
+		return util.NewResult(false, fmt.Sprintf("Projects not split by new group sizes: got %v, want [4 4 4]", projectCounts))
+	}
+
+	return util.ResultOk()
+}
+
+// MoveProjectGroupUsesGroupTables verifies that projects moved to another group get the
+// next table in that group, that full groups are rejected, and that no table numbers are duplicated
+func MoveProjectGroupUsesGroupTables(context *util.Context) util.Result {
+	defer resetGroupOptions(context)
+
+	// Groups 1 and 2 are full, group 3 is empty
+	if res := setupGroups(context, []int64{4, 4, 4}, 8, false); !res.Success {
+		return res
+	}
+	firstId, res := findProjectIDByName(context, "Group Project 1")
+	if !res.Success {
+		return res
+	}
+	secondId, res := findProjectIDByName(context, "Group Project 2")
+	if !res.Success {
+		return res
+	}
+
+	// Moving into the empty group should use that group's first table (9)
+	moveRes := util.PutRequest(context.Logger, "/project/move/group/"+firstId, util.H{"group": 2}, util.AdminAuth())
+	if !util.IsOk(moveRes) {
+		return util.NewResult(false, "Failed to move project to empty group: "+moveRes)
+	}
+	listRes := util.GetRequest(context.Logger, "/project/list", util.AdminAuth())
+	if location := findProjectFieldByName(listRes, "Group Project 1", "location"); location != "9" {
+		return util.NewResult(false, "Project moved to empty group should be at table 9, got "+location)
+	}
+
+	// Moving into a non-empty group should use the next table in that group (10)
+	moveRes = util.PutRequest(context.Logger, "/project/move/group/"+secondId, util.H{"group": 2}, util.AdminAuth())
+	if !util.IsOk(moveRes) {
+		return util.NewResult(false, "Failed to move project to group: "+moveRes)
+	}
+	listRes = util.GetRequest(context.Logger, "/project/list", util.AdminAuth())
+	if location := findProjectFieldByName(listRes, "Group Project 2", "location"); location != "10" {
+		return util.NewResult(false, "Project should be moved to table 10, got "+location)
+	}
+
+	// Group 2 is still full, so moving a project there should fail, for one project or many
+	moveRes = util.PutRequest(context.Logger, "/project/move/group/"+firstId, util.H{"group": 1}, util.AdminAuth())
+	if util.IsOk(moveRes) {
+		return util.NewResult(false, "Moving a project to a full group should fail")
+	}
+	moveRes = util.PostRequest(context.Logger, "/project/move/group", util.H{"items": []string{firstId, secondId}, "group": 1}, util.AdminAuth())
+	if util.IsOk(moveRes) {
+		return util.NewResult(false, "Moving selected projects to a full group should fail")
+	}
+
+	// Every project should still have its own table
+	var projects []struct {
+		Name     string `json:"name"`
+		Location int64  `json:"location"`
+	}
+	listRes = util.GetRequest(context.Logger, "/project/list", util.AdminAuth())
+	if err := jsonUnmarshalList(listRes, &projects); err != nil {
+		return util.NewResult(false, "Failed to parse project list: "+listRes)
+	}
+	tables := make(map[int64]string)
+	for _, project := range projects {
+		if other, ok := tables[project.Location]; ok {
+			return util.NewResult(false, fmt.Sprintf("%s and %s are both at table %d", other, project.Name, project.Location))
+		}
+		tables[project.Location] = project.Name
+	}
+
+	return util.ResultOk()
+}

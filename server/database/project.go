@@ -394,11 +394,12 @@ func GetGroupMaxNum(db *mongo.Database, ctx context.Context, group int64) (int64
 	}
 
 	var project models.Project
-	if cursor.Next(ctx) {
-		err = cursor.Decode(&project)
-		if err != nil {
-			return -1, err
-		}
+	if !cursor.Next(ctx) {
+		return -1, cursor.Err()
+	}
+	err = cursor.Decode(&project)
+	if err != nil {
+		return -1, err
 	}
 
 	return project.Location, nil

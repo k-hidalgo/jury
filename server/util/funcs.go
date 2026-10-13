@@ -53,17 +53,34 @@ func FindSeenProjectIndex(judge *models.Judge, projectId primitive.ObjectID) int
 	return -1
 }
 
-// Gets the group from the table number
+// Gets the group from the table number.
+// Table numbers start at 1, and each group holds the next GroupSizes[group] tables,
+// with the last group also holding any tables past the end of the group sizes.
 func GroupFromTable(op *models.Options, table int64) int64 {
+	if len(op.GroupSizes) == 0 {
+		return 0
+	}
+
 	group := int64(0)
-	for group < int64(len(op.GroupSizes)) && table >= op.GroupSizes[group] {
-		table -= op.GroupSizes[group]
+	for group < int64(len(op.GroupSizes))-1 && table > GroupLastTable(op, group) {
 		group++
 	}
-	if group == int64(len(op.GroupSizes)) {
-		group--
-	}
 	return group
+}
+
+// GroupFirstTable returns the first table number in the group
+func GroupFirstTable(op *models.Options, group int64) int64 {
+	first := int64(1)
+	for i := int64(0); i < group && i < int64(len(op.GroupSizes)); i++ {
+		first += op.GroupSizes[i]
+	}
+	return first
+}
+
+// GroupLastTable returns the last table number in the group.
+// Note that the last group also holds any tables past this number.
+func GroupLastTable(op *models.Options, group int64) int64 {
+	return GroupFirstTable(op, group+1) - 1
 }
 
 // RankingToString converts a ranking array to a string
