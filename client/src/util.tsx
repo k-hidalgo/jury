@@ -149,6 +149,23 @@ function pad(str: string, max: number) {
     return str.substring(0, max) + '...';
 }
 
+// Groups are stored starting at 0, but shown to admins starting at 1
+function displayGroup(group: number) {
+    return group + 1;
+}
+
+// Parses a group number typed by an admin (starting at 1) into the stored group (starting at 0).
+// Returns null if the input is not a whole number from 1 to numGroups.
+function parseGroupInput(text: string, numGroups: number): number | null {
+    const trimmed = text.trim();
+    if (!/^\d+$/.test(trimmed)) return null;
+
+    const group = Number(trimmed);
+    if (group < 1 || group > numGroups) return null;
+
+    return group - 1;
+}
+
 export {
     timeSince,
     arrow,
@@ -159,4 +176,6 @@ export {
     parseCSV,
     fileToString,
     pad,
+    displayGroup,
+    parseGroupInput,
 };

@@ -107,6 +107,7 @@ func RunTests(context *util.Context) {
 				"Reassign After Changing Group Sizes":            ReassignAfterChangingGroupSizes,
 				"Proportional Uses Group Sizes Without Projects": ProportionalUsesGroupSizesWithoutProjects,
 				"Track Judges Not Assigned To Groups":            TrackJudgesNotAssignedToGroups,
+				"Move Judge Group Validates Range":               MoveJudgeGroupValidatesRange,
 			},
 		},
 	}

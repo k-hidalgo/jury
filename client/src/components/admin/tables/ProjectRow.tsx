@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { errorAlert, timeSince } from '../../../util';
+import { displayGroup, errorAlert, timeSince } from '../../../util';
 import DeletePopup from './DeletePopup';
 import EditProjectPopup from './EditProjectPopup';
 import { useAdminStore, useAdminTableStore, useFlagsStore, useOptionsStore } from '../../../store';
@@ -137,7 +137,7 @@ const ProjectRow = ({ project, idx }: ProjectRowProps) => {
                 </td>
                 <td className="text-center py-1">Table {project.location}</td>
                 {options.multi_group && track === '' && (
-                    <td className="text-center">{project.group}</td>
+                    <td className="text-center">{displayGroup(project.group)}</td>
                 )}
                 {track === '' && <td className="text-center">{project.score}</td>}
                 <td className="text-center">{stars}</td>

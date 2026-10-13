@@ -733,7 +733,7 @@ func MoveProjectGroup(ctx *gin.Context) {
 	}
 
 	// Send OK
-	state.Logger.AdminLogf("Moved project %s to group %d", id.Hex(), moveReq.Group)
+	state.Logger.AdminLogf("Moved project %s to group %d", id.Hex(), moveReq.Group+1)
 	ctx.JSON(http.StatusOK, gin.H{"ok": 1})
 }
 
@@ -864,7 +864,7 @@ func MoveSelectedProjectsGroup(ctx *gin.Context) {
 	}
 
 	// Send OK
-	state.Logger.AdminLogf("Moved %d projects to group %d", len(moveReq.Items), moveReq.Group)
+	state.Logger.AdminLogf("Moved %d projects to group %d", len(moveReq.Items), moveReq.Group+1)
 	ctx.JSON(http.StatusOK, gin.H{"ok": 1})
 }
 

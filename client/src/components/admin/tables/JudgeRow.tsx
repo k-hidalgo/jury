@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { errorAlert, timeSince } from '../../../util';
+import { displayGroup, errorAlert, timeSince } from '../../../util';
 import DeletePopup from './DeletePopup';
 import EditJudgePopup from './EditJudgePopup';
 import { putRequest } from '../../../api';
@@ -100,7 +100,7 @@ const JudgeRow = ({ judge, idx }: JudgeRowProps) => {
                 <td>{judge.name}</td>
                 <td className="text-center">{judge.code}</td>
                 {options.multi_group && (
-                    <td className="text-center">{judge.group}</td>
+                    <td className="text-center">{displayGroup(judge.group)}</td>
                 )}
                 <td className="text-center">{judge.seen}</td>
                 <td className="text-center">{idToProj(judge.current)}</td>

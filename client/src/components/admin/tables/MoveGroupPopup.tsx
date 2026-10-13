@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { postRequest, putRequest } from '../../../api';
 import ConfirmPopup from '../../ConfirmPopup';
-import { errorAlert } from '../../../util';
-import { useAdminStore, useAdminTableStore } from '../../../store';
+import { displayGroup, errorAlert, parseGroupInput } from '../../../util';
+import { useAdminStore, useAdminTableStore, useOptionsStore } from '../../../store';
 import TextInput from '../../TextInput';
 
 interface MoveGroupPopupProps {
@@ -28,6 +28,7 @@ const MoveGroupPopup = (props: MoveGroupPopupProps) => {
     const fetchProjects = useAdminStore((state) => state.fetchProjects);
     const setSelected = useAdminTableStore((state) => state.setSelected);
     const selected = useAdminTableStore((state) => state.selected);
+    const numGroups = useOptionsStore((state) => state.options.num_groups);
 
     const handleSubmit = () => {
         if (!props.item && !props.items) {
@@ -35,9 +36,9 @@ const MoveGroupPopup = (props: MoveGroupPopupProps) => {
         }
 
         // Check to see if new group is valid
-        const group = Number(newGroup);
-        if (isNaN(group) || group < 0) {
-            alert('Invalid group number');
+        const group = parseGroupInput(newGroup, numGroups);
+        if (group === null) {
+            alert(`Invalid group number, please enter a number from 1 to ${numGroups}`);
             return;
         }
 
@@ -61,7 +62,7 @@ const MoveGroupPopup = (props: MoveGroupPopupProps) => {
             return;
         }
 
-        alert(`${props.isProject ? 'Project' : 'Judge'} moved to group ${group} successfully!`);
+        alert(`${props.isProject ? 'Project' : 'Judge'} moved to group ${displayGroup(group)} successfully!`);
         props.isProject ? fetchProjects() : fetchJudges();
         props.setEnabled(false);
     };
@@ -80,7 +81,7 @@ const MoveGroupPopup = (props: MoveGroupPopupProps) => {
             return;
         }
 
-        alert(`Selected ${props.isProject ? 'projects' : 'judges'} moved to group ${group} successfully!`);
+        alert(`Selected ${props.isProject ? 'projects' : 'judges'} moved to group ${displayGroup(group)} successfully!`);
         props.isProject ? fetchProjects() : fetchJudges();
         props.setEnabled(false);
         setSelected(new Array(selected.length).fill(false));
@@ -89,7 +90,7 @@ const MoveGroupPopup = (props: MoveGroupPopupProps) => {
     useEffect(() => {
         if (!props.item) return;
 
-        setNewGroup(String(props.item.group));
+        setNewGroup(String(displayGroup(props.item.group)));
     }, [props.item]);
 
     return (
@@ -105,13 +106,13 @@ const MoveGroupPopup = (props: MoveGroupPopupProps) => {
                     <p className="text-light">
                         Move the {props.isProject ? 'project' : 'judge'}&nbsp;
                         <span className="text-primary font-bold">{props.item?.name}</span> to
-                        another group. Enter the new group number below.
+                        another group. Enter the new group number (1 to {numGroups}) below.
                     </p>
                 )}
                 {props.items && (
                     <p className="text-light">
                         Move the selected {props.isProject ? 'projects' : 'judges'} to another
-                        group. Enter the new group number below.
+                        group. Enter the new group number (1 to {numGroups}) below.
                     </p>
                 )}
                 <TextInput

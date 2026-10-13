@@ -374,3 +374,55 @@ func getUnevenProjectGroupCounts(context *util.Context, numGroups int) ([]int64,
 	}
 	return counts, util.ResultOk()
 }
+
+// MoveJudgeGroupValidatesRange verifies that judges can be moved to an existing group,
+// but not to a group outside of the configured number of groups
+func MoveJudgeGroupValidatesRange(context *util.Context) util.Result {
+	defer resetGroupOptions(context)
+
+	if res := setupGroups(context, []int64{6, 3, 3}, 0, false); !res.Success {
+		return res
+	}
+	if res := addGroupJudges(context, "move", 2); !res.Success {
+		return res
+	}
+	id, res := findJudgeIDByEmail(context, "group_move_0@example.com")
+	if !res.Success {
+		return res
+	}
+	otherId, res := findJudgeIDByEmail(context, "group_move_1@example.com")
+	if !res.Success {
+		return res
+	}
+
+	// Moving to the last group (stored as 2) should work
+	moveRes := util.PutRequest(context.Logger, "/judge/move/group/"+id, util.H{"group": 2}, util.AdminAuth())
+	if !util.IsOk(moveRes) {
+		return util.NewResult(false, "Failed to move judge to a valid group: "+moveRes)
+	}
+	listRes := util.GetRequest(context.Logger, "/judge/list", util.AdminAuth())
+	if group := findJudgeFieldByEmail(listRes, "group_move_0@example.com", "group"); group != "2" {
+		return util.NewResult(false, "Judge not moved to group 2, got "+group)
+	}
+
+	// Groups outside of the range should be rejected, for one judge or many
+	for _, group := range []int{-1, 3} {
+		moveRes = util.PutRequest(context.Logger, "/judge/move/group/"+id, util.H{"group": group}, util.AdminAuth())
+		if util.IsOk(moveRes) {
+			return util.NewResult(false, fmt.Sprintf("Moving a judge to group %d should fail", group))
+		}
+
+		moveRes = util.PostRequest(context.Logger, "/judge/move/group", util.H{"items": []string{id, otherId}, "group": group}, util.AdminAuth())
+		if util.IsOk(moveRes) {
+			return util.NewResult(false, fmt.Sprintf("Moving selected judges to group %d should fail", group))
+		}
+	}
+
+	// The judge should still be in the group they were moved to
+	listRes = util.GetRequest(context.Logger, "/judge/list", util.AdminAuth())
+	if group := findJudgeFieldByEmail(listRes, "group_move_0@example.com", "group"); group != "2" {
+		return util.NewResult(false, "Judge group changed after invalid move, got "+group)
+	}
+
+	return util.ResultOk()
+}

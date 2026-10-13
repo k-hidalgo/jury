@@ -981,6 +981,11 @@ func MoveJudge(ctx *gin.Context) {
 		return
 	}
 
+	// Make sure valid group
+	if !validJudgeGroup(ctx, state, moveReq.Group) {
+		return
+	}
+
 	// Move the judge to the new group
 	err = database.SetJudgeGroup(state.Db, ctx, &judgeObjectId, moveReq.Group)
 	if err != nil {
@@ -989,7 +994,7 @@ func MoveJudge(ctx *gin.Context) {
 	}
 
 	// Send OK
-	state.Logger.AdminLogf("Moved judge %s to group %d", id, moveReq.Group)
+	state.Logger.AdminLogf("Moved judge %s to group %d", id, moveReq.Group+1)
 	ctx.JSON(http.StatusOK, gin.H{"ok": 1})
 }
 
@@ -1006,6 +1011,11 @@ func MoveSelectedJudges(ctx *gin.Context) {
 		return
 	}
 
+	// Make sure valid group
+	if !validJudgeGroup(ctx, state, moveReq.Group) {
+		return
+	}
+
 	// Move the judges to the new group
 	err = database.SetJudgesGroup(state.Db, ctx, moveReq.Items, moveReq.Group)
 	if err != nil {
@@ -1014,8 +1024,22 @@ func MoveSelectedJudges(ctx *gin.Context) {
 	}
 
 	// Send OK
-	state.Logger.AdminLogf("Moved %d judges to group %d", len(moveReq.Items), moveReq.Group)
+	state.Logger.AdminLogf("Moved %d judges to group %d", len(moveReq.Items), moveReq.Group+1)
 	ctx.JSON(http.StatusOK, gin.H{"ok": 1})
+}
+
+// validJudgeGroup checks that the group exists, sending an error response if it does not
+func validJudgeGroup(ctx *gin.Context, state *State, group int64) bool {
+	options, err := database.GetOptions(state.Db, ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting options: " + err.Error()})
+		return false
+	}
+	if group < 0 || group >= options.NumGroups {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid group number"})
+		return false
+	}
+	return true
 }
 
 type AddJudgeFromQRRequest struct {
