@@ -50,14 +50,11 @@ func AddJudge(ctx *gin.Context) {
 
 	// Run remaining actions in a transaction
 	err = database.WithTransaction(state.Db, func(sc mongo.SessionContext) error {
-		// Determine group judge should go in
-		group := int64(0)
-		if judgeReq.Track == "" {
-			group, err = database.GetMinJudgeGroup(state.Db, sc)
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting judge group: " + err.Error()})
-				return err
-			}
+		// Balance this judge's own track (or general judging) across groups.
+		group, err := database.GetMinJudgeGroup(state.Db, sc, judgeReq.Track)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting judge group: " + err.Error()})
+			return err
 		}
 
 		// Create the judge
@@ -233,16 +230,10 @@ func AddJudgesCsv(ctx *gin.Context) {
 
 	// Do the remaining actions in a transaction
 	err = database.WithTransaction(state.Db, func(sc mongo.SessionContext) error {
-		// Determine group numbers for the new judges
-		groups, err := database.GetNextNJudgeGroups(state.Db, sc, len(judges), false)
-		if err != nil {
+		// Balance mixed-track CSV batches independently per track.
+		if err := database.AssignJudgeGroups(state.Db, sc, judges, false); err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting judge groups: " + err.Error()})
 			return err
-		}
-
-		// Assign group numbers to the new judges
-		for i, judge := range judges {
-			judge.Group = groups[i]
 		}
 
 		// Insert judges into the database
@@ -1098,14 +1089,11 @@ func AddJudgeFromQR(ctx *gin.Context) {
 			return err
 		}
 
-		// Determine group judge should go in
-		group := int64(0)
-		if qrReq.Track == "" {
-			group, err = database.GetMinJudgeGroup(state.Db, sc)
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting judge group: " + err.Error()})
-				return err
-			}
+		// Balance this judge's own track (or general judging) across groups.
+		group, err := database.GetMinJudgeGroup(state.Db, sc, qrReq.Track)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting judge group: " + err.Error()})
+			return err
 		}
 
 		// Create the judge

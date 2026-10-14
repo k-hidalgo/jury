@@ -191,9 +191,9 @@ func ProportionalUsesGroupSizesWithoutProjects(context *util.Context) util.Resul
 	return util.ResultOk()
 }
 
-// TrackJudgesNotAssignedToGroups verifies that track judges do not count towards
-// or get moved by multi-group judge assignment
-func TrackJudgesNotAssignedToGroups(context *util.Context) util.Result {
+// TrackJudgesDoNotAffectGeneralGroups verifies that track staffing is independent
+// of the general judging allocation
+func TrackJudgesDoNotAffectGeneralGroups(context *util.Context) util.Result {
 	defer resetGroupOptions(context)
 
 	if res := setupGroups(context, []int64{6, 3, 3}, 0, true); !res.Success {
@@ -291,7 +291,7 @@ func setProportionalJudgeGroups(context *util.Context, proportional bool) util.R
 	return util.AssertOk(res, "Failed to set proportional judge groups")
 }
 
-// reassignJudgeGroups reassigns all general judges to groups
+// reassignJudgeGroups reassigns general and track judges independently
 func reassignJudgeGroups(context *util.Context) util.Result {
 	res := util.PostRequest(context.Logger, "/judge/reassign", nil, util.AdminAuth())
 	return util.AssertOk(res, "Failed to reassign judge groups")

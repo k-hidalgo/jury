@@ -870,8 +870,13 @@ const AdminSettings = () => {
                                 group instead, so larger groups get more judges (eg. groups of 60,
                                 30, and 30 projects with 12 judges get 6, 3, and 3 judges). If no
                                 projects have been added yet, the group sizes above are used. This
-                                applies to newly added judges; reassign judge groups to apply it to
-                                existing judges (eg. after changing group sizes).
+                                applies to general judges and separately to each track, using only
+                                that track's eligible projects. Track assignment covers every room
+                                with eligible projects before adding more judges to a room, when
+                                enough judges are available. Rooms without eligible track projects
+                                get no starting track judges. Before projects are imported, group
+                                sizes are provisional; reassign judge groups after importing projects
+                                or changing this setting to update existing judges.
                             </Description>
                             <Checkbox
                                 checked={proportionalJudgeGroups}

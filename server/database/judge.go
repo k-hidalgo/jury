@@ -288,6 +288,7 @@ func countByGroup(db *mongo.Database, ctx context.Context, collection string, ma
 		return nil, err
 	}
 
+	defer cursor.Close(ctx)
 	counts := make([]int64, numGroups)
 	for cursor.Next(ctx) {
 		var result struct {
@@ -321,8 +322,8 @@ func getJudgeGroupWeights(db *mongo.Database, ctx context.Context, options *mode
 }
 
 // GetMinJudgeGroup returns the group a single new judge should be assigned to
-func GetMinJudgeGroup(db *mongo.Database, ctx context.Context) (int64, error) {
-	groups, err := GetNextNJudgeGroups(db, ctx, 1, false)
+func GetMinJudgeGroup(db *mongo.Database, ctx context.Context, track string) (int64, error) {
+	groups, err := getNextNJudgeGroupsForTrack(db, ctx, 1, false, track)
 	if err != nil {
 		return -1, err
 	}
@@ -335,22 +336,39 @@ func GetMinJudgeGroup(db *mongo.Database, ctx context.Context) (int64, error) {
 // the number of projects in each group if proportional judge groups are enabled).
 // If reset is true, the current judge counts are ignored.
 func GetNextNJudgeGroups(db *mongo.Database, ctx context.Context, n int, reset bool) ([]int64, error) {
+	return getNextNJudgeGroupsForTrack(db, ctx, n, reset, "")
+}
+
+// Each track has its own staffing counts and project weights; general judging
+// retains its existing allocator. No group moves occur during this calculation.
+func getNextNJudgeGroupsForTrack(db *mongo.Database, ctx context.Context, n int, reset bool, track string) ([]int64, error) {
 	// Get options
 	options, err := GetOptions(db, ctx)
 	if err != nil {
 		return nil, err
 	}
-	if options.NumGroups < 1 {
+	if options.NumGroups < 1 || (track != "" && !options.MultiGroup) {
 		return make([]int64, n), nil
 	}
 
 	// Get the current number of judges in each group
 	judgeCounts := make([]int64, options.NumGroups)
 	if !reset {
-		judgeCounts, err = countByGroup(db, ctx, "judges", gin.H{"active": true, "track": ""}, options.NumGroups)
+		judgeCounts, err = countByGroup(db, ctx, "judges", gin.H{"active": true, "track": track}, options.NumGroups)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if track != "" {
+		projects, err := countByGroup(db, ctx, "projects", gin.H{
+			"active": true, "challenge_list": track,
+		}, options.NumGroups)
+		if err != nil {
+			return nil, err
+		}
+		weights := util.TrackJudgeGroupWeights(options.NumGroups, options.ProportionalJudgeGroups, projects, options.GroupSizes)
+		return util.AllocateTrackGroups(judgeCounts, weights, n), nil
 	}
 
 	weights, err := getJudgeGroupWeights(db, ctx, options)
@@ -361,30 +379,48 @@ func GetNextNJudgeGroups(db *mongo.Database, ctx context.Context, n int, reset b
 	return util.AllocateGroups(judgeCounts, weights, n), nil
 }
 
-// PutJudgesInGroups assigns judges to groups
-func PutJudgesInGroups(db *mongo.Database) error {
-	return WithTransaction(db, func(sc mongo.SessionContext) error {
-		// Get all judges
-		judges, err := FindJudgesByTrack(db, sc, "")
+// AssignJudgeGroups assigns a batch independently per track, preserving input order.
+// Used by CSV import and by pre-judging reassignment. With reset, existing counts
+// are ignored separately for general judging and for each track.
+func AssignJudgeGroups(db *mongo.Database, ctx context.Context, judges []*models.Judge, reset bool) error {
+	byTrack := map[string][]*models.Judge{}
+	tracks := []string{}
+	for _, judge := range judges {
+		// Hidden track accounts do not provide staffing coverage. Leave their
+		// existing group alone, matching the active-only registration counts.
+		if judge.Track != "" && !judge.Active {
+			continue
+		}
+		if _, exists := byTrack[judge.Track]; !exists {
+			tracks = append(tracks, judge.Track)
+		}
+		byTrack[judge.Track] = append(byTrack[judge.Track], judge)
+	}
+	for _, track := range tracks {
+		batch := byTrack[track]
+		groups, err := getNextNJudgeGroupsForTrack(db, ctx, len(batch), reset, track)
 		if err != nil {
 			return err
 		}
-
-		// Get the next n groups to assign judges to
-		groups, err := GetNextNJudgeGroups(db, sc, len(judges), true)
-		if err != nil {
-			return err
-		}
-
-		// Assign each judge to a group
-		for i, judge := range judges {
+		for i, judge := range batch {
 			judge.Group = groups[i]
 			judge.GroupSeen = 0
 		}
+	}
+	return nil
+}
 
-		// Update the judges in the database
-		err = UpdateJudgeGroups(db, sc, judges)
-		return err
+// PutJudgesInGroups reassigns general and track judges independently.
+func PutJudgesInGroups(db *mongo.Database) error {
+	return WithTransaction(db, func(sc mongo.SessionContext) error {
+		judges, err := FindAllJudges(db, sc)
+		if err != nil {
+			return err
+		}
+		if err := AssignJudgeGroups(db, sc, judges, true); err != nil {
+			return err
+		}
+		return UpdateJudgeGroups(db, sc, judges)
 	})
 }
 
