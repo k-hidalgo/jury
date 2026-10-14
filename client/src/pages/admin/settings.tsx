@@ -1,3 +1,4 @@
+import FinalistReviewPanel from '../../components/admin/FinalistReviewPanel';
 import { useEffect, useState } from 'react';
 import { createHeaders, getRequest, postRequest } from '../../api';
 import Button from '../../components/Button';
@@ -678,6 +679,8 @@ const AdminSettings = () => {
                         />
                         <SettingsButton onClick={updateMinViews}>Update Min Views</SettingsButton>
                     </FieldButton>
+
+                    <FinalistReviewPanel />
 
                     <SubSection>Ignore Tracks</SubSection>
                     <Description>

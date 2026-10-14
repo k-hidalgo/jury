@@ -118,6 +118,8 @@ interface Flag {
 }
 
 interface Options {
+    finalist_review: boolean;
+    finalist_target_views: number;
     curr_table_num: number;
     clock: ClockState;
     judging_timer: number;

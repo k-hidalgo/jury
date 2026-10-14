@@ -220,6 +220,11 @@ func SetOptions(ctx *gin.Context) {
 		return
 	}
 
+	if options.FinalistTargetViews != nil && *options.FinalistTargetViews < 1 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "finalist target views must be a positive integer"})
+		return
+	}
+
 	// Save the options in the database
 	err = database.UpdateOptions(state.Db, ctx, &options)
 	if err != nil {

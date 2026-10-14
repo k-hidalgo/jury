@@ -3,6 +3,8 @@ package models
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type Options struct {
+	FinalistReview          bool               `bson:"finalist_review" json:"finalist_review"`
+	FinalistTargetViews     int64              `bson:"finalist_target_views" json:"finalist_target_views"`
 	Id                      primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Ref                     int64              `bson:"ref" json:"ref"`
 	Clock                   ClockState         `bson:"clock" json:"clock"`
@@ -30,31 +32,34 @@ type Options struct {
 
 func NewOptions() *Options {
 	return &Options{
-		Ref:            0,
-		JudgingTimer:   300,
-		MinViews:       3,
-		Clock:          *NewClockState(),
-		ClockSync:      false,
-		Deliberation:   false,
-		JudgeTracks:    false,
-		Tracks:         []string{},
-		TrackViews:     []int64{},
-		MultiGroup:     false,
-		NumGroups:      3,
-		GroupSizes:     []int64{30, 30, 30},
-		SwitchingMode:  "auto",
-		AutoSwitchProp: 0.1,
-		ManualSwitches: 0,
-		QRCode:         "",
-		TrackQRCodes:   make(map[string]string),
-		GroupNames:     []string{"Group 1", "Group 2", "Group 3"},
-		IgnoreTracks:   []string{},
-		MaxReqPerMin:   100,
-		BlockReqs:      false,
+		FinalistTargetViews: 4,
+		Ref:                 0,
+		JudgingTimer:        300,
+		MinViews:            3,
+		Clock:               *NewClockState(),
+		ClockSync:           false,
+		Deliberation:        false,
+		JudgeTracks:         false,
+		Tracks:              []string{},
+		TrackViews:          []int64{},
+		MultiGroup:          false,
+		NumGroups:           3,
+		GroupSizes:          []int64{30, 30, 30},
+		SwitchingMode:       "auto",
+		AutoSwitchProp:      0.1,
+		ManualSwitches:      0,
+		QRCode:              "",
+		TrackQRCodes:        make(map[string]string),
+		GroupNames:          []string{"Group 1", "Group 2", "Group 3"},
+		IgnoreTracks:        []string{},
+		MaxReqPerMin:        100,
+		BlockReqs:           false,
 	}
 }
 
 type OptionalOptions struct {
+	FinalistReview          *bool     `bson:"finalist_review,omitempty" json:"finalist_review,omitempty"`
+	FinalistTargetViews     *int64    `bson:"finalist_target_views,omitempty" json:"finalist_target_views,omitempty"`
 	JudgingTimer            *int64    `bson:"judging_timer,omitempty" json:"judging_timer,omitempty"`
 	MinViews                *int64    `bson:"min_views,omitempty" json:"min_views,omitempty"`
 	ClockSync               *bool     `bson:"clock_sync,omitempty" json:"clock_sync,omitempty"`

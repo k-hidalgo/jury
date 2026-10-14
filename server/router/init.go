@@ -60,6 +60,7 @@ func NewRouter(db *mongo.Database, logger *logging.Logger) *gin.Engine {
 	// The default group is for routes that do not require authentication
 	judgeRouter := router.Group("/api", AuthenticateJudge())
 	adminRouter := router.Group("/api", AuthenticateAdmin())
+	adminRouter.GET("/admin/finalist-review", GetFinalistReview)
 	defaultRouter := router.Group("/api")
 
 	// ###############################
