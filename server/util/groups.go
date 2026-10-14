@@ -81,3 +81,45 @@ func AllocateGroups(counts []int64, weights []float64, n int) []int64 {
 
 	return groups
 }
+
+// TrackJudgeGroupWeights uses only this track's eligible active projects. Empty
+// rooms receive no judges. Before projects exist, use configured sizes (or equal
+// weights when proportional assignment is off) as a provisional allocation.
+func TrackJudgeGroupWeights(numGroups int64, proportional bool, projectCounts []int64, groupSizes []int64) []float64 {
+	weights := JudgeGroupWeights(numGroups, proportional, projectCounts, groupSizes)
+	total := int64(0)
+	for _, count := range projectCounts {
+		total += count
+	}
+	if total > 0 {
+		for i := range weights {
+			if i >= len(projectCounts) || projectCounts[i] == 0 {
+				weights[i] = 0
+			}
+		}
+	}
+	return weights
+}
+
+// AllocateTrackGroups first covers each eligible room, when staffing permits,
+// then uses the existing proportional allocator with those judges counted.
+// If fewer judges than rooms exist, the highest-weight uncovered rooms go first.
+func AllocateTrackGroups(counts []int64, weights []float64, n int) []int64 {
+	c := append([]int64(nil), counts...)
+	groups := make([]int64, 0, n)
+	for len(groups) < n {
+		uncovered := -1
+		for i, count := range c {
+			if count == 0 && i < len(weights) && weights[i] > 0 &&
+				(uncovered == -1 || weights[i] > weights[uncovered]) {
+				uncovered = i
+			}
+		}
+		if uncovered == -1 {
+			break
+		}
+		groups = append(groups, int64(uncovered))
+		c[uncovered]++
+	}
+	return append(groups, AllocateGroups(c, weights, n-len(groups))...)
+}

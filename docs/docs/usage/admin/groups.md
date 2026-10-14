@@ -35,7 +35,11 @@ Although mostly cosmetic, the group names are displayed in the project expo page
 
 ## Assigning Judges to Groups
 
-Judge groups will be assigned **automatically** in a round-robin fashion as you add judges to the system. If for any reason the number of judges in a group is uneven, you can either manually move a single judge using the **Move Group** action in the admin table:
+Judge groups are assigned **automatically** as judges are added through QR registration, the admin form, or CSV import. General judging and each track have separate staffing pools. By default, assignment balances judges evenly. Enabling **Assign Judges Proportionally to Group Size** weights general judging by all active projects and each track by only its eligible active projects in each group.
+
+Track assignment first places a judge in every group with eligible projects, when enough judges are available. Additional judges are allocated proportionally. For example, a track with nine projects in one room and two in another receives one judge per room when two judges register. With eleven judges, it receives nine and two. Groups without eligible track projects receive no starting track judges.
+
+Before projects are imported, track assignment is provisional: it uses configured group sizes in proportional mode and equal weights otherwise. After import, or after changing this setting, use **Reassign Judge Groups** before judging begins to update existing general and track accounts independently. Registration does not move previously assigned judges. Manual group switching and project selection are unchanged by this allocation setting. If for any reason the number of judges in a group is uneven, you can either manually move a single judge using the **Move Group** action in the admin table:
 
 ![Move groups](./assets/move-groups.png)
 

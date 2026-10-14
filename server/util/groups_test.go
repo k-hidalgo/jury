@@ -1,6 +1,9 @@
 package util
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func countGroups(groups []int64, numGroups int) []int64 {
 	counts := make([]int64, numGroups)
@@ -109,4 +112,65 @@ func TestAllocateGroupsDoesNotModifyCounts(t *testing.T) {
 	counts := []int64{1, 2}
 	AllocateGroups(counts, []float64{1, 1}, 5)
 	assertCounts(t, counts, []int64{1, 2})
+}
+
+func TestTrackGroupCoverageAndProportions(t *testing.T) {
+	for _, tc := range []struct {
+		name                   string
+		projects, counts, want []int64
+		n                      int
+		proportional           bool
+	}{
+		{"nine and two projects, two judges", []int64{9, 2}, []int64{0, 0}, []int64{1, 1}, 2, true},
+		{"additional judges restore proportion", []int64{9, 2}, []int64{0, 0}, []int64{9, 2}, 11, true},
+		{"existing staffed large room", []int64{9, 2}, []int64{1, 0}, []int64{1, 1}, 1, true},
+		{"empty room receives none", []int64{0, 11}, []int64{0, 0}, []int64{0, 4}, 4, true},
+		{"fewer judges than rooms", []int64{2, 9, 1}, []int64{0, 0, 0}, []int64{1, 1, 0}, 2, true},
+		{"equal mode covers only eligible rooms", []int64{9, 0, 2}, []int64{0, 0, 0}, []int64{2, 0, 2}, 4, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			weights := TrackJudgeGroupWeights(int64(len(tc.counts)), tc.proportional, tc.projects, nil)
+			groups := AllocateTrackGroups(tc.counts, weights, tc.n)
+			got := append([]int64(nil), tc.counts...)
+			for _, group := range groups {
+				got[group]++
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestTrackGroupsSequentialMatchesBatch(t *testing.T) {
+	weights := TrackJudgeGroupWeights(2, true, []int64{9, 2}, nil)
+	batch := AllocateTrackGroups([]int64{0, 0}, weights, 11)
+	counts := []int64{0, 0}
+	for i, want := range batch {
+		got := AllocateTrackGroups(counts, weights, 1)[0]
+		if got != want {
+			t.Fatalf("registration %d: got %d, want %d", i, got, want)
+		}
+		counts[got]++
+	}
+}
+
+func TestTrackGroupFallbackAndInputPreservation(t *testing.T) {
+	counts := []int64{0, 0}
+	weights := TrackJudgeGroupWeights(2, true, []int64{0, 0}, []int64{9, 2})
+	if !reflect.DeepEqual(weights, []float64{9, 2}) {
+		t.Fatalf("unexpected fallback %v", weights)
+	}
+	if got := AllocateTrackGroups(counts, weights, 2); !reflect.DeepEqual(got, []int64{0, 1}) {
+		t.Fatalf("got %v", got)
+	}
+	if !reflect.DeepEqual(counts, []int64{0, 0}) {
+		t.Fatal("mutated caller counts")
+	}
+	if got := AllocateTrackGroups(counts, weights, 0); len(got) != 0 {
+		t.Fatalf("zero judges: %v", got)
+	}
+	if got := AllocateTrackGroups(nil, nil, 1); !reflect.DeepEqual(got, []int64{0}) {
+		t.Fatalf("no groups: %v", got)
+	}
 }
