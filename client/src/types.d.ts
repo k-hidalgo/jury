@@ -31,7 +31,7 @@ interface PublicProject {
 
 interface Judge {
     invitation_status?: string;
-    invitation_updated_at?: number;
+    invitation_updated_at?: string;
     id: string;
     name: string;
     code: string;
