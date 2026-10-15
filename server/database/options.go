@@ -20,12 +20,22 @@ func GetOptions(db *mongo.Database, ctx context.Context) (*models.Options, error
 		return &options, err
 	}
 
+	// Older databases do not have a finalist target yet. No migration writes needed.
+	if options.FinalistTargetViews < 1 {
+		options.FinalistTargetViews = 4
+	}
 	return &options, err
 }
 
 // UpdateOptions updates the options in the database
 func UpdateOptions(db *mongo.Database, ctx context.Context, options *models.OptionalOptions) error {
 	update := gin.H{}
+	if options.FinalistReview != nil {
+		update["finalist_review"] = *options.FinalistReview
+	}
+	if options.FinalistTargetViews != nil {
+		update["finalist_target_views"] = *options.FinalistTargetViews
+	}
 
 	if options.JudgingTimer != nil {
 		update["judging_timer"] = *options.JudgingTimer

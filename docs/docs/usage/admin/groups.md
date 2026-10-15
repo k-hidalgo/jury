@@ -46,3 +46,34 @@ Before projects are imported, track assignment is provisional: it uses configure
 Or, you can click the "reassign groups" to reassign ALL judge groups. This *can* be done during judging as it will just shuffle around judges a bit to new groups; however, try to avoid this as much as possible! It is also not advised to reassign groups mid-judging if using the manual switching method as it may mess up the judging ratios!
 
 ![Reassign groups](./assets/reassign-groups.png)
+
+
+## Overall Finalist Review
+
+Under Settings → Judging Parameters, **Overall Finalist Review** is off by default.
+Use the existing **Prioritize** action in the Projects table to mark a shortlist,
+then enable review after checking initial coverage. Enabling requires confirmation.
+The default target is **4 total completed overall views**, including earlier visits.
+Targets must be positive whole numbers and can be changed during review.
+
+For each overall judge, Jury keeps the existing active/seen/flag/busy/group rules.
+Within those eligible projects it first covers zero-view projects, then prioritizes
+shortlisted projects below target, favoring those with fewer completed views.
+When there are no available shortlisted projects below target, normal assignment
+continues. Enabling review with no prioritized projects leaves assignment unchanged.
+Turning review off restores the original selection path, including legacy priority.
+
+This is not an automatic finalist selector or a hard view cap. Projects remain
+eligible for normal assignment after the target, and visits already underway can
+finish. Organizers must choose the shortlist and monitor the room-level summary.
+Initial coverage protection is per judge's room, not an event-wide gate. Existing
+group fallback still applies when a room has no eligible projects; review does not
+move judges between rooms merely because another room has finalists.
+
+The coverage panel counts active projects with zero completed overall views and
+shortlisted projects below target, both overall and by room. Track visits do not
+count toward these totals. Counts refresh every ten seconds or manually.
+
+Track assignment, track view limits, scoring, rankings, existing assignments, and
+halfway room switching are unchanged. Review does not start on a timer: organizers
+enable it manually. New settings read safely on older databases without a migration.

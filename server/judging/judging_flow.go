@@ -183,19 +183,25 @@ func PickNextProject(db *mongo.Database, ctx context.Context, judge *models.Judg
 		return GetNextFreeProject(judge.LastLocation, items)
 	}
 
-	// Get prioritized projects
-	prioritizedProjects, err := database.GetPrioritizedProjects(db, ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// If any prioritized projects are in the list, return the first one
-	for _, proj := range prioritizedProjects {
-		if slices.ContainsFunc(items, func(p *models.Project) bool {
-			return p.Id == proj.Id
-		}) {
-			return proj, nil
+	// Legacy priority is unchanged while finalist review is off. In review mode,
+	// FindAvailableItems applies coverage/shortlist/target ordering before the
+	// usual lowest-view filter. Reached targets receive no special priority.
+	if !options.FinalistReview {
+		// Get prioritized projects
+		prioritizedProjects, err := database.GetPrioritizedProjects(db, ctx)
+		if err != nil {
+			return nil, err
 		}
+
+		// If any prioritized projects are in the list, return the first one
+		for _, proj := range prioritizedProjects {
+			if slices.ContainsFunc(items, func(p *models.Project) bool {
+				return p.Id == proj.Id
+			}) {
+				return proj, nil
+			}
+		}
+
 	}
 
 	// Shuffle items
@@ -320,7 +326,6 @@ func FindAvailableItems(db *mongo.Database, ctx context.Context, judge *models.J
 		projects = freeProjects
 	}
 
-
 	// Group checking logic
 	if options.MultiGroup {
 		attempts := int64(0)
@@ -351,7 +356,11 @@ func FindAvailableItems(db *mongo.Database, ctx context.Context, judge *models.J
 	}
 	// Track judges use the group-filtered projects without general view balancing.
 	if judge.Track != "" {
-	    return projects, nil
+		return projects, nil
+	}
+
+	if candidates := finalistReviewCandidates(projects, options); candidates != nil {
+		return candidates, nil
 	}
 
 	// Get the minimum number of views of the remaining projects

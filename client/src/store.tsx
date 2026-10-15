@@ -134,6 +134,8 @@ const useOptionsStore = create<OptionsStore>((set) => ({
         },
         judging_timer: 0,
         min_views: 0,
+        finalist_review: false,
+        finalist_target_views: 4,
         clock_sync: false,
         judge_tracks: false,
         tracks: [],

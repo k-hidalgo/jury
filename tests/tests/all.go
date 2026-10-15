@@ -19,6 +19,15 @@ type TestGroup struct {
 
 func RunTests(context *util.Context) {
 	tests := []TestGroup{
+        {
+            Name: "Overall Finalist Review",
+            Setup: GroupJudgingTestSetup,
+            Tests: map[string]func(*util.Context) util.Result{
+                "Finalist Settings And Coverage": FinalistReviewSettingsAndCoverage,
+                "Finalist Keeps Current Assignment": FinalistReviewKeepsCurrentAssignment,
+                "Finalist Assignment Order": FinalistReviewAssignmentOrder,
+            },
+        },
 		{
 			Name: "Smoke Tests",
 			Tests: map[string]func(*util.Context) util.Result{
