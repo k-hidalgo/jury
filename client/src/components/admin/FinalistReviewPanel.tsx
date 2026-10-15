@@ -92,13 +92,15 @@ const FinalistReviewPanel = () => {
             </p>
             {error && <p role="alert" className="text-error mb-2">{error}</p>}
             {coverage ? <>
-                <p className="font-bold mb-2">
-                    Overall projects unseen: {coverage.unseen} · Shortlisted: {coverage.shortlisted}
-                    {' '}· Shortlisted below target ({coverage.target_views}): {coverage.below_target}
-                </p>
+                <h4 className="font-bold mb-2">Overall Projects Unseen</h4>
+                <div className="font-bold space-y-1 mb-3">
+                    <p>Unseen: {coverage.unseen}</p>
+                    <p>Shortlisted: {coverage.shortlisted}</p>
+                    <p>Shortlisted Below Target ({coverage.target_views}): {coverage.below_target}</p>
+                </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left mb-2">
-                        <thead><tr><th>Room</th><th>Unseen</th><th>Shortlisted</th><th>Below target</th></tr></thead>
+                        <thead><tr><th>Room</th><th>Unseen</th><th>Shortlisted</th><th>Below Target</th></tr></thead>
                         <tbody>{coverage.groups.map((group) => <tr key={group.group}>
                             <td>{group.name}</td><td>{group.unseen}</td>
                             <td>{group.shortlisted}</td><td>{group.below_target}</td>
@@ -108,7 +110,13 @@ const FinalistReviewPanel = () => {
                 <p className="text-sm text-light">Active projects only; counts refresh every 10 seconds.
                     Coverage protection is per judge’s room, not an event-wide gate. Resolve unseen projects in both rooms.</p>
             </> : <p>Loading finalist coverage…</p>}
-            <Button type="text" onClick={refresh}>Refresh Finalist Coverage</Button>
+            <Button
+                type="primary"
+                onClick={refresh}
+                className="my-2 h-max text-lg md:text-2xl py-[2px] md:py-1"
+            >
+                Refresh Finalist Coverage
+            </Button>
         </section>
     );
 };
