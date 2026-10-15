@@ -57,8 +57,11 @@ The default target is **4 total completed overall views**, including earlier vis
 Targets must be positive whole numbers and can be changed during review.
 
 For each overall judge, Jury keeps the existing active/seen/flag/busy/group rules.
-Within those eligible projects it first covers zero-view projects, then prioritizes
-shortlisted projects below target, favoring those with fewer completed views.
+Within those eligible projects it first covers projects below **Set Minimum Project
+Views**, favoring those with the fewest completed overall views, then prioritizes
+shortlisted projects below the finalist target. For example, a general minimum of
+2 gives projects with one view coverage priority over finalists already seen twice.
+Setting the general minimum to 0 disables this coverage step.
 When there are no available shortlisted projects below target, normal assignment
 continues. Enabling review with no prioritized projects leaves assignment unchanged.
 Turning review off restores the original selection path, including legacy priority.
@@ -66,13 +69,14 @@ Turning review off restores the original selection path, including legacy priori
 This is not an automatic finalist selector or a hard view cap. Projects remain
 eligible for normal assignment after the target, and visits already underway can
 finish. Organizers must choose the shortlist and monitor the room-level summary.
-Initial coverage protection is per judge's room, not an event-wide gate. Existing
+Minimum-view coverage protection is per judge's room, not an event-wide gate. Existing
 group fallback still applies when a room has no eligible projects; review does not
 move judges between rooms merely because another room has finalists.
 
 The coverage panel counts active projects with zero completed overall views and
 shortlisted projects below target, both overall and by room. Track visits do not
-count toward these totals. Counts refresh every ten seconds or manually.
+count toward these totals. The Unseen count reports zero-view projects only, not
+all projects below the general minimum. Counts refresh every ten seconds or manually.
 
 Track assignment, track view limits, scoring, rankings, existing assignments, and
 halfway room switching are unchanged. Review does not start on a timer: organizers

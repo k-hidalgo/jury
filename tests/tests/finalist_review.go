@@ -99,6 +99,8 @@ func FinalistReviewKeepsCurrentAssignment(c *util.Context) util.Result {
 // Exercise the actual Next Project endpoint so CI checks selection as well as settings.
 func FinalistReviewAssignmentOrder(c *util.Context) util.Result {
 	defer resetGroupOptions(c)
+	originalMin := util.ExtractInt(util.GetRequest(c.Logger, "/admin/options", util.AdminAuth()), "min_views")
+	defer util.PostRequest(c.Logger, "/admin/options", util.H{"min_views": originalMin}, util.AdminAuth())
 	defer util.PostRequest(c.Logger, "/admin/options", util.H{"finalist_review": false}, util.AdminAuth())
 	if res := setupGroups(c, []int64{2, 1}, 3, false); !res.Success {
 		return res
@@ -106,13 +108,17 @@ func FinalistReviewAssignmentOrder(c *util.Context) util.Result {
 	for i, tc := range []struct {
 		enabled, priority  bool
 		ordinary, finalist int
-		want               int
+		minimum, want      int
 	}{
-		{false, true, 1, 2, 1}, // Original lowest-view filtering.
-		{true, true, 1, 2, 2},  // Finalist priority now crosses that filter.
-		{true, true, 0, 2, 1},  // Unseen coverage is protected.
-		{true, true, 1, 4, 1},  // Target reached: normal assignment.
-		{true, false, 1, 2, 1}, // On with no shortlist is normal assignment.
+		{false, true, 1, 2, 1, 1}, // Review off retains original filtering.
+		{true, true, 1, 2, 1, 2},  // Minimum met: prioritize finalist.
+		{true, true, 0, 2, 1, 1},  // Zero-view coverage with minimum one.
+		{true, true, 1, 2, 2, 1},  // Second overall view before finalist.
+		{true, true, 2, 3, 3, 1},  // Respect higher configured minimum.
+		{true, true, 2, 3, 2, 2},  // Minimum reached: release finalist.
+		{true, true, 0, 2, 0, 2},  // Zero minimum disables coverage priority.
+		{true, true, 1, 4, 2, 1},  // Finalist target reached: normal filtering.
+		{true, false, 1, 2, 2, 1}, // No shortlist retains normal filtering.
 	} {
 		if _, err := c.Db.Collection("judges").DeleteMany(stdcontext.Background(), bson.M{}); err != nil {
 			return util.NewResult(false, err.Error())
@@ -126,7 +132,7 @@ func FinalistReviewAssignmentOrder(c *util.Context) util.Result {
 				return util.NewResult(false, err.Error())
 			}
 		}
-		util.PostRequest(c.Logger, "/admin/options", util.H{"finalist_review": tc.enabled, "finalist_target_views": 4}, util.AdminAuth())
+		util.PostRequest(c.Logger, "/admin/options", util.H{"finalist_review": tc.enabled, "finalist_target_views": 4, "min_views": tc.minimum}, util.AdminAuth())
 		email := fmt.Sprintf("finalist-order-%d@example.com", i)
 		token, res := createNamedJudge(c, email, "Finalist order")
 		if !res.Success {

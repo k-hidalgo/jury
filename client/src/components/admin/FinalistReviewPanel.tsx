@@ -53,7 +53,7 @@ const FinalistReviewPanel = () => {
     const toggle = () => {
         if (!coverage) return;
         if (!coverage.enabled && !window.confirm(
-            'Enable overall finalist review? Unseen projects in each judge’s room come first, then prioritized projects below the target. Track judging is unchanged.'
+            'Enable overall finalist review? Projects below the general minimum views in each judge’s room come first, then prioritized projects below the target. Track judging is unchanged.'
         )) return;
         save({ finalist_review: !coverage.enabled });
     };
@@ -71,8 +71,8 @@ const FinalistReviewPanel = () => {
             <h3 className="text-xl font-bold text-primary mb-2">Overall Finalist Review</h3>
             <p className="text-light mb-3">
                 Use Prioritize in the Projects table to mark your shortlist. When enabled,
-                overall judges first cover unseen projects in their room, then shortlisted
-                projects below the target, favoring fewer views. With no available finalists
+                overall judges first cover projects below the general minimum views in their room,
+                favoring the fewest views, then shortlisted projects below the finalist target. With no available finalists
                 below target, normal assignment continues. Track judging is unchanged.
             </p>
             <label className="flex items-center gap-2 my-3">
@@ -108,7 +108,7 @@ const FinalistReviewPanel = () => {
                     </table>
                 </div>
                 <p className="text-sm text-light">Active projects only; counts refresh every 10 seconds.
-                    Coverage protection is per judge’s room, not an event-wide gate. Resolve unseen projects in both rooms.</p>
+                    Coverage protection is per judge’s room, not an event-wide gate. Resolve projects below the general minimum in both rooms. Unseen counts only projects with zero views.</p>
             </> : <p>Loading finalist coverage…</p>}
             <Button
                 type="primary"

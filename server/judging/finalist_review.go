@@ -14,10 +14,10 @@ func finalistReviewCandidates(projects []*models.Project, options *models.Option
 		target = 4
 	}
 	finalists := []*models.Project{}
-	unseen := []*models.Project{}
+	belowMinimum := []*models.Project{}
 	for _, p := range projects {
-		if p.Seen == 0 {
-			unseen = append(unseen, p)
+		if p.Seen < options.MinViews {
+			belowMinimum = append(belowMinimum, p)
 		}
 		if p.Prioritized && p.Seen < target {
 			finalists = append(finalists, p)
@@ -26,17 +26,22 @@ func finalistReviewCandidates(projects []*models.Project, options *models.Option
 	if len(finalists) == 0 {
 		return nil
 	}
-	if len(unseen) > 0 {
-		return unseen
+	if len(belowMinimum) > 0 {
+		return fewestSeenCandidates(belowMinimum)
 	}
-	minSeen := finalists[0].Seen
-	for _, p := range finalists {
+	return fewestSeenCandidates(finalists)
+}
+
+// Within coverage or finalist review, favor the least-covered eligible projects.
+func fewestSeenCandidates(projects []*models.Project) []*models.Project {
+	minSeen := projects[0].Seen
+	for _, p := range projects {
 		if p.Seen < minSeen {
 			minSeen = p.Seen
 		}
 	}
 	candidates := []*models.Project{}
-	for _, p := range finalists {
+	for _, p := range projects {
 		if p.Seen == minSeen {
 			candidates = append(candidates, p)
 		}
