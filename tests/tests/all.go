@@ -20,6 +20,13 @@ type TestGroup struct {
 func RunTests(context *util.Context) {
 	tests := []TestGroup{
 		{
+			Name: "Judge CSV Invitations",
+			Setup: GroupJudgingTestSetup,
+			Tests: map[string]func(*util.Context) util.Result{
+				"Validated Import And Durable Invitation Retries": JudgeCSVInvitations,
+			},
+		},
+		{
 			Name:  "Final Results Export",
 			Setup: GroupJudgingTestSetup,
 			Tests: map[string]func(*util.Context) util.Result{

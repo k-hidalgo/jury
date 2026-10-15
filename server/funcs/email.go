@@ -2,6 +2,7 @@ package funcs
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"html/template"
@@ -109,8 +110,16 @@ func sendgridEmail(sendgridApiKey string, judge *models.Judge, hostname string) 
 
 	message := mail.NewSingleEmail(from, subject, to, "", string(htmlContent))
 	client := sendgrid.NewSendClient(sendgridApiKey)
-	_, err = client.Send(message)
-	return err
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	response, err := client.SendWithContext(ctx, message)
+	if err != nil {
+		return err
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return fmt.Errorf("email provider rejected invitation (HTTP %d)", response.StatusCode)
+	}
+	return nil
 }
 
 func sendEmailWithTimeout(host string, port string, auth smtp.Auth, from string, to []string, body []byte) error {
@@ -120,6 +129,10 @@ func sendEmailWithTimeout(host string, port string, auth smtp.Auth, from string,
 		return fmt.Errorf("failed to connect to email server: %v", err)
 	}
 	defer conn.Close()
+	// Bound the whole SMTP exchange, not only the initial connection.
+	if err := conn.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
+		return err
+	}
 
 	// Create SMTP client
 	client, err := smtp.NewClient(conn, host)

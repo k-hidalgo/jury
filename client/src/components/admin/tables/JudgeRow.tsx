@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { errorAlert, timeSince } from '../../../util';
 import DeletePopup from './DeletePopup';
 import EditJudgePopup from './EditJudgePopup';
-import { putRequest } from '../../../api';
+import { postRequest, putRequest } from '../../../api';
 import { useAdminStore, useAdminTableStore, useOptionsStore } from '../../../store';
 import { twMerge } from 'tailwind-merge';
 import ActionsDropdown from '../../ActionsDropdown';
@@ -10,6 +10,7 @@ import MoveGroupPopup from './MoveGroupPopup';
 import GroupLabel from './GroupLabel';
 import JudgeRanksPopup from './JudgeRanksPopup';
 import { useNavigate } from 'react-router-dom';
+import { invitationLabel } from '../add-judges/InvitationPanel';
 
 interface JudgeRowProps {
     judge: Judge;
@@ -18,6 +19,7 @@ interface JudgeRowProps {
 
 const JudgeRow = ({ judge, idx }: JudgeRowProps) => {
     const [popup, setPopup] = useState(false);
+    const [resending, setResending] = useState(false);
     const [editPopup, setEditPopup] = useState(false);
     const [movePopup, setMovePopup] = useState(false);
     const [deletePopup, setDeletePopup] = useState(false);
@@ -65,6 +67,23 @@ const JudgeRow = ({ judge, idx }: JudgeRowProps) => {
         fetchJudges();
     };
 
+    const resendInvitation = async () => {
+        if (resending || !window.confirm(`Resend the existing login code to ${judge.name} (${judge.email})?`)) return;
+        setResending(true);
+        try {
+            const res = await postRequest<{ok: number; invitations: InvitationReport}>(`/judge/${judge.id}/invitation`, 'admin', null);
+            if (res.status !== 200 || !res.data) { errorAlert(res); return; }
+            const report = res.data.invitations;
+            alert(report.accepted ? 'Invitation accepted by the email server. Inbox delivery may take longer.'
+                : report.failed ? 'Invitation failed. The account and code are saved; check the email address and retry.'
+                : 'An invitation is already being sent. Refresh status before retrying.');
+        } finally {
+            setResending(false);
+            fetchJudges();
+            window.dispatchEvent(new Event('jury-invitations-updated'));
+        }
+    };
+
     const loginAsJudge = () => {
         navigate(`/judge/login?code=${judge.code}`);
     }
@@ -98,7 +117,9 @@ const JudgeRow = ({ judge, idx }: JudgeRowProps) => {
                         className="cursor-pointer hover:text-primary duration-100"
                     ></input>
                 </td>
-                <td>{judge.name}</td>
+                <td>{judge.name}
+                    <div className="text-xs text-light">Invitation: {invitationLabel(judge.invitation_status)}</div>
+                </td>
                 <td className="text-center">{judge.code}</td>
                 {options.multi_group && (
                     <td className="text-center">
@@ -112,16 +133,17 @@ const JudgeRow = ({ judge, idx }: JudgeRowProps) => {
                     <ActionsDropdown
                         open={popup}
                         setOpen={setPopup}
-                        actions={['Scores', 'Edit', judge.active ? 'Hide' : 'Unhide', 'Move Group', 'Login as Judge', 'Delete']}
+                        actions={['Scores', 'Edit', judge.active ? 'Hide' : 'Unhide', 'Move Group', 'Login as Judge', resending ? 'Sending Invitation…' : 'Resend Invitation', 'Delete']}
                         actionFunctions={[
                             setRanksPopup.bind(null, true),
                             setEditPopup.bind(null, true),
                             hideJudge,
                             setMovePopup.bind(null, true),
                             loginAsJudge,
+                            resendInvitation,
                             setDeletePopup.bind(null, true),
                         ]}
-                        redIndices={[5]}
+                        redIndices={[6]}
                     />
                     <span
                         className="cursor-pointer px-1 hover:text-primary duration-150"

@@ -9,25 +9,28 @@ import (
 )
 
 type Judge struct {
-	Id           primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
-	Token        string               `bson:"token" json:"token"`
-	Code         string               `bson:"code" json:"code"`
-	Name         string               `bson:"name" json:"name"`
-	Email        string               `bson:"email" json:"email"`
-	Active       bool                 `bson:"active" json:"active"`
-	Track        string               `bson:"track" json:"track"`
-	Group        int64                `bson:"group" json:"group"`
-	ReadWelcome  bool                 `bson:"read_welcome" json:"read_welcome"`
-	Notes        string               `bson:"notes" json:"notes"`
-	Current      *primitive.ObjectID  `bson:"current" json:"current"`
-	LastLocation int64                `bson:"last_location" json:"last_location"`
-	Seen         int64                `bson:"seen" json:"seen"`
-	GroupSeen    int64                `bson:"group_seen" json:"group_seen"` // Projects seen in the group
-	SeenProjects []JudgedProject      `bson:"seen_projects" json:"seen_projects"`
-	Rankings     []primitive.ObjectID `bson:"rankings" json:"rankings"`
-	RankingsAgg  []AggRanking         `bson:"rankings_agg" json:"rankings_agg"` // Aggregation for ranking scoring
-	Flagged      []primitive.ObjectID `bson:"flagged" json:"flagged"`           // Projects that the judge has flagged (not ranked)
-	LastActivity primitive.DateTime   `bson:"last_activity" json:"last_activity"`
+	InvitationStatus    string               `bson:"invitation_status,omitempty" json:"invitation_status,omitempty"`
+	InvitationUpdatedAt primitive.DateTime   `bson:"invitation_updated_at,omitempty" json:"invitation_updated_at,omitempty"`
+	InvitationAttempt   primitive.ObjectID   `bson:"invitation_attempt,omitempty" json:"-"`
+	Id                  primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
+	Token               string               `bson:"token" json:"token"`
+	Code                string               `bson:"code" json:"code"`
+	Name                string               `bson:"name" json:"name"`
+	Email               string               `bson:"email" json:"email"`
+	Active              bool                 `bson:"active" json:"active"`
+	Track               string               `bson:"track" json:"track"`
+	Group               int64                `bson:"group" json:"group"`
+	ReadWelcome         bool                 `bson:"read_welcome" json:"read_welcome"`
+	Notes               string               `bson:"notes" json:"notes"`
+	Current             *primitive.ObjectID  `bson:"current" json:"current"`
+	LastLocation        int64                `bson:"last_location" json:"last_location"`
+	Seen                int64                `bson:"seen" json:"seen"`
+	GroupSeen           int64                `bson:"group_seen" json:"group_seen"` // Projects seen in the group
+	SeenProjects        []JudgedProject      `bson:"seen_projects" json:"seen_projects"`
+	Rankings            []primitive.ObjectID `bson:"rankings" json:"rankings"`
+	RankingsAgg         []AggRanking         `bson:"rankings_agg" json:"rankings_agg"` // Aggregation for ranking scoring
+	Flagged             []primitive.ObjectID `bson:"flagged" json:"flagged"`           // Projects that the judge has flagged (not ranked)
+	LastActivity        primitive.DateTime   `bson:"last_activity" json:"last_activity"`
 }
 
 type JudgedProject struct {

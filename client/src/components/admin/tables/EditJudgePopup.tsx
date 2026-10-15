@@ -31,6 +31,7 @@ const EditJudgePopup = (props: EditJudgePopupProps) => {
         const res = await putRequest(`/judge/${props.judge.id}`, 'admin', data);
         if (res.status !== 200) {
             errorAlert(res);
+            setIsSubmitting(false);
             return;
         }
 
@@ -54,6 +55,7 @@ const EditJudgePopup = (props: EditJudgePopupProps) => {
                 <TextInput label="Name" text={name} setText={setName} full />
                 <TextInput label="Email" text={email} setText={setEmail} full />
             </div>
+            <p className="text-sm text-light">Changing an email does not send an invitation. After saving, use Resend Invitation from the judge’s menu.</p>
             <TextArea label="Notes (optional)" value={notes} setValue={setNotes} />
         </ConfirmPopup>
     );
