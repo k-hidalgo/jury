@@ -308,7 +308,7 @@ const AdminSettings = () => {
         // Make sure number of views is equal to num of tracks
         if (views.length !== ts.length) {
             alert(
-                'Number of track views should be the same as number of tracks (you need a min number of views for each track)!'
+                'Number of track views should be the same as number of tracks (enter one view count for each track)!'
             );
             return;
         }
@@ -790,7 +790,7 @@ const AdminSettings = () => {
                                 Update Tracks
                             </SettingsButton>
 
-                            <SubSection>Set Track Min Views</SubSection>
+                            <SubSection>Set Track Views per Project</SubSection>
                             <Description>
                                 Set the number of views a track project should get across all
                                 judges. For example, if this is set to 3, then a project will be
@@ -798,7 +798,7 @@ const AdminSettings = () => {
                                 set to around 2-4, depending on the size of the track.
                             </Description>
                             <TextInput
-                                label="Track min views"
+                                label="Track Views per Project"
                                 placeholder="3, 3, 2, ..."
                                 text={trackViews}
                                 setText={setTrackViews}
@@ -807,7 +807,7 @@ const AdminSettings = () => {
                                 className="my-2 mr-4"
                             />
                             <SettingsButton onClick={updateTrackViews}>
-                                Update Track Min Views
+                                Update Track Views per Project
                             </SettingsButton>
                         </>
                     )}
