@@ -46,3 +46,26 @@ You can upload a CSV of all judges in the same as [adding project by CSV](/docs/
 - Notes (optional)
 
 You may check "Do not send an email" if you do not wish to send emails to all judges added by CSV. Note that email sending might be slow for a lot of judges added at once through CSV.
+
+CSV columns are positional: **name, email, track, notes**. Leave track blank for Overall; otherwise copy its exact name from Settings → List of Tracks. One CSV can mix Overall and track judges. Optional track/notes columns can be omitted; quote values containing commas. Check **CSV contains a header row** when present. UTF-8 BOMs and surrounding field whitespace are handled.
+
+All rows are validated before any accounts or invitations are created. Missing names, invalid email addresses, unknown track names, duplicate email/track pairs within the file, and accounts already registered for that email/track are rejected. The same email can have accounts for different tracks. Import projects and configure tracks/groups before importing judges so room assignments use the intended project distribution.
+
+Accounts and room assignments are committed before invitations are attempted. One email failure does not undo accounts or prevent later invitations from being attempted. The upload reports accounts created and invitations accepted/failed. Do not reimport the CSV to resend invitations.
+
+### Invitation status and retries
+
+The Add Judges page shows persistent **Invitation Status** for active accounts:
+
+- **Pending:** saved and awaiting an invitation attempt.
+- **Sending:** an attempt is underway. Interrupted attempts become retryable after two minutes.
+- **Accepted by email server:** the mail service accepted the message; this does not confirm inbox delivery.
+- **Failed:** the last attempt failed. The account and login code remain saved.
+- **Not sent:** emails were not requested, or the email address was subsequently changed.
+- **Unknown — not tracked:** accounts created without invitation tracking, including existing QR/manual accounts.
+
+**Retry Failed / Pending Invitations** retries pending, failed, and expired sending attempts for active judges. It excludes accepted, not-sent, and untracked accounts. Status refreshes automatically every ten seconds and can be refreshed manually. After an interrupted upload, refresh status before retrying or importing again.
+
+Each judge’s menu also has **Resend Invitation** for an explicit resend, including accepted or untracked accounts. Both retry controls use the existing account and login code and never create a replacement account. Changing an email in Edit Judge resets its invitation status to Not sent; save, then use Resend Invitation to send to the corrected address.
+
+Sending attempts are claimed atomically to avoid overlapping sends. If delivery succeeded but its response was lost, a retry may produce another email containing the same valid code. These controls do not change judging assignments, scores, or rankings.

@@ -6,6 +6,7 @@ import Button from '../Button';
 import Card from '../Card';
 import Checkbox from '../Checkbox';
 import CSVPreview from './CSVPreview';
+import InvitationPanel from './add-judges/InvitationPanel';
 
 interface UploadCSVFormProps {
     /* The format of the CSV file */
@@ -54,7 +55,7 @@ const UploadCSVForm = (props: UploadCSVFormProps) => {
         // Create the form data object
         const formData = new FormData();
         formData.append('csv', file as Blob);
-        formData.append('headerRow', headerRow.toString());
+        formData.append('hasHeader', headerRow.toString());
 
         // Add no email send if judge
         if (props.format === 'judge') {
@@ -63,9 +64,11 @@ const UploadCSVForm = (props: UploadCSVFormProps) => {
 
         // Make the request to the server
         const path = formatPathMap[props.format];
-        const res = await postRequest<CsvData | OkResponse>(path, 'admin', formData, true);
+        const res = await postRequest<CsvData | JudgeImportResult | OkResponse>(path, 'admin', formData, true);
         if (res.status !== 200) {
-            setError(res.error);
+            setError(props.format === 'judge' && (res.status >= 500 || res.status === 404)
+                ? `${res.error || 'Upload failed.'} If the connection was interrupted, refresh Invitation Status before uploading again; accounts may already be saved.`
+                : res.error);
             setIsUploading(false);
             return;
         }
@@ -80,7 +83,14 @@ const UploadCSVForm = (props: UploadCSVFormProps) => {
 
         // Show success message
         const resource = props.format === 'judge' ? 'judge' : 'project';
-        setMsg(`Added ${resource}(s) successfully!`);
+        if (props.format === 'judge') {
+            const result = res.data as JudgeImportResult;
+            const summary = result.invitations;
+            setMsg(`${result.created} judges created. ${noSend ? 'No invitations requested.' : `${summary.accepted} invitations accepted by the email server; ${summary.failed} failed.`} ${result.warning || ''}`);
+            window.dispatchEvent(new Event('jury-invitations-updated'));
+        } else {
+            setMsg(`Added ${resource}(s) successfully!`);
+        }
 
         // Fetch the updated stats
         props.format === 'judge' ? fetchJudgeStats() : fetchProjectStats();
@@ -95,6 +105,7 @@ const UploadCSVForm = (props: UploadCSVFormProps) => {
 
     return (
         <>
+            {props.format === 'judge' && <InvitationPanel />}
             <Card>
                 <div className="flex flex-col items-start h-full">
                     <h1 className="text-3xl">
@@ -172,7 +183,7 @@ const UploadCSVForm = (props: UploadCSVFormProps) => {
                             </Checkbox>
                         </div>
                         {error && (
-                            <div className="text-base text-center text-error">
+                            <div className="text-base text-center text-error whitespace-pre-line">
                                 Error Uploading CSV: {error}
                             </div>
                         )}

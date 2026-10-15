@@ -30,6 +30,8 @@ interface PublicProject {
 }
 
 interface Judge {
+    invitation_status?: string;
+    invitation_updated_at?: string;
     id: string;
     name: string;
     code: string;
@@ -204,4 +206,15 @@ interface ResetPopup {
 interface GroupInfo {
     names: string[];
     enabled: boolean;
+}
+
+interface InvitationReport {
+    accepted: number;
+    failed: number;
+    skipped: number;
+}
+interface JudgeImportResult extends OkResponse {
+    created: number;
+    invitations: InvitationReport;
+    warning?: string;
 }

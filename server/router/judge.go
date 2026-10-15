@@ -8,6 +8,7 @@ import (
 	"server/judging"
 	"server/models"
 	"server/util"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -165,92 +166,6 @@ func JudgeAuthenticated(ctx *gin.Context) {
 	// This route will run the middleware first, and if the middleware
 	// passes, then that means the judge is authenticated
 
-	ctx.JSON(http.StatusOK, gin.H{"ok": 1})
-}
-
-// POST /judge/csv - Endpoint to add judges from a CSV file
-func AddJudgesCsv(ctx *gin.Context) {
-	// Get the state from the context
-	state := GetState(ctx)
-
-	// Get the CSV file from the request
-	file, err := ctx.FormFile("csv")
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "error reading CSV file from request: " + err.Error()})
-		return
-	}
-
-	// Get the form fields from the request
-	hasHeader := ctx.PostForm("hasHeader") == "true"
-	noSend := ctx.PostForm("noSend") == "true"
-
-	// Open the file
-	f, err := file.Open()
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error opening CSV file: " + err.Error()})
-		return
-	}
-
-	// Read the file
-	content := make([]byte, file.Size)
-	_, err = f.Read(content)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error reading CSV file: " + err.Error()})
-		return
-	}
-
-	// Parse the CSV file
-	judges, err := funcs.ParseJudgeCSV(string(content), hasHeader)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "error parsing CSV file: " + err.Error()})
-		return
-	}
-
-	// Get hostname from request
-	hostname := util.GetFullHostname(ctx)
-
-	// Check all judge emails
-	for _, judge := range judges {
-		if !funcs.CheckEmail(judge.Email) {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid email: " + judge.Email})
-			return
-		}
-	}
-
-	// Send emails to all judges
-	if !noSend {
-		for _, judge := range judges {
-			err = funcs.SendJudgeEmail(judge, hostname)
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error sending judge " + judge.Name + " email: " + err.Error()})
-				return
-			}
-		}
-	}
-
-	// Do the remaining actions in a transaction
-	err = database.WithTransaction(state.Db, func(sc mongo.SessionContext) error {
-		// Balance mixed-track CSV batches independently per track.
-		if err := database.AssignJudgeGroups(state.Db, sc, judges, false); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error getting judge groups: " + err.Error()})
-			return err
-		}
-
-		// Insert judges into the database
-		err = database.InsertJudges(state.Db, sc, judges)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error inserting judges into database: " + err.Error()})
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return
-	}
-
-	// Send OK
-	state.Logger.AdminLogf("Added %d judges from CSV", len(judges))
 	ctx.JSON(http.StatusOK, gin.H{"ok": 1})
 }
 
@@ -629,6 +544,13 @@ func EditJudge(ctx *gin.Context) {
 	err := ctx.BindJSON(&judgeReq)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "error reading request body: " + err.Error()})
+		return
+	}
+
+	judgeReq.Name = strings.TrimSpace(judgeReq.Name)
+	judgeReq.Email = strings.TrimSpace(judgeReq.Email)
+	if judgeReq.Name == "" || !funcs.ValidInvitationEmail(judgeReq.Email) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "name and a valid email address are required"})
 		return
 	}
 

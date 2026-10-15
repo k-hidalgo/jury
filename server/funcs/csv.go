@@ -20,7 +20,8 @@ import (
 
 // Read CSV file and return a slice of judge structs
 func ParseJudgeCSV(content string, hasHeader bool) ([]*models.Judge, error) {
-	r := csv.NewReader(strings.NewReader(content))
+	r := csv.NewReader(strings.NewReader(strings.TrimPrefix(content, "\ufeff")))
+	r.FieldsPerRecord = -1
 
 	// Empty CSV file
 	if content == "" {
@@ -29,7 +30,9 @@ func ParseJudgeCSV(content string, hasHeader bool) ([]*models.Judge, error) {
 
 	// If the CSV file has a header, skip the first line
 	if hasHeader {
-		r.Read()
+		if _, err := r.Read(); err != nil {
+			return nil, fmt.Errorf("could not read header: %w", err)
+		}
 	}
 
 	// Read the CSV file, looping through each record
@@ -44,8 +47,12 @@ func ParseJudgeCSV(content string, hasHeader bool) ([]*models.Judge, error) {
 		}
 
 		// Make sure the record has 2+ elements (name, email, tracks [optional], notes [optional])
-		if len(record) < 2 {
-			return nil, fmt.Errorf("record does not contain 2-3 (name, email, tracks [optional] notes [optional]) elements: '%s'", strings.Join(record, ","))
+		if len(record) < 2 || len(record) > 4 {
+			line, _ := r.FieldPos(0)
+			return nil, fmt.Errorf("row %d must contain 2–4 columns: name, email, optional track and optional notes", line)
+		}
+		for i := range record {
+			record[i] = strings.TrimSpace(record[i])
 		}
 
 		// Assign notes and tracks

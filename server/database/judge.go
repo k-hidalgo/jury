@@ -6,6 +6,7 @@ import (
 	"server/models"
 	"server/util"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -223,11 +224,21 @@ func SetJudgesActive(db *mongo.Database, ids []primitive.ObjectID, active bool) 
 
 // UpdateJudgeBasicInfo updates the basic info of a judge (name, email, notes)
 func UpdateJudgeBasicInfo(db *mongo.Database, judgeId *primitive.ObjectID, addRequest *models.AddJudgeRequest) error {
-	_, err := db.Collection("judges").UpdateOne(
-		context.Background(),
-		gin.H{"_id": judgeId},
-		gin.H{"$set": gin.H{"name": addRequest.Name, "email": addRequest.Email, "notes": addRequest.Notes}},
-	)
+	ctx := context.Background()
+	current, err := FindJudge(db, ctx, *judgeId)
+	if err != nil {
+		return err
+	}
+	if current == nil {
+		return errors.New("judge not found")
+	}
+	fields := gin.H{"name": addRequest.Name, "email": addRequest.Email, "notes": addRequest.Notes}
+	if current.Email != addRequest.Email {
+		fields["invitation_status"] = "not_sent"
+		fields["invitation_attempt"] = primitive.NilObjectID
+		fields["invitation_updated_at"] = primitive.NewDateTimeFromTime(time.Now())
+	}
+	_, err = db.Collection("judges").UpdateOne(ctx, gin.H{"_id": judgeId}, gin.H{"$set": fields})
 	return err
 }
 

@@ -78,6 +78,9 @@ func NewRouter(db *mongo.Database, logger *logging.Logger) *gin.Engine {
 	// Admin panel - judges
 	adminRouter.POST("/judge/new", AddJudge)
 	adminRouter.POST("/judge/csv", AddJudgesCsv)
+	adminRouter.GET("/admin/invitations", GetInvitations)
+	adminRouter.POST("/admin/invitations/retry", RetryInvitations)
+	adminRouter.POST("/judge/:id/invitation", ResendJudgeInvitation)
 	adminRouter.GET("/judge/list", ListJudges)
 	adminRouter.DELETE("/judge/:id", DeleteJudge)
 	adminRouter.PUT("/judge/:id", EditJudge)
