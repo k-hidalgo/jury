@@ -98,6 +98,7 @@ const AdminSettings = () => {
         handler: null,
     });
     const [running, setRunning] = useState(false);
+    const [exportingResults, setExportingResults] = useState(false);
     const fetchOptions = useOptionsStore((state) => state.fetchOptions);
     const options = useOptionsStore((state) => state.options);
     const fetchClock = useClockStore((state) => state.fetchClock);
@@ -515,6 +516,33 @@ const AdminSettings = () => {
 
         alert(`Reset ${type}`);
         setResetPopup({ open: false, text: '', handler: null });
+    };
+
+    const exportFinalResults = async () => {
+        setExportingResults(true);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_JURY_URL}/admin/export/final-results`, {
+                method: 'GET',
+                headers: createHeaders('admin', false),
+            });
+            if (!res.ok) {
+                alert('Error exporting final results. Please try again.');
+                return;
+            }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `final-results-${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+        } catch {
+            alert('Unable to download final results. Check your connection and try again.');
+        } finally {
+            setExportingResults(false);
+        }
     };
 
     const exportCsv = async (type: string) => {
@@ -968,9 +996,12 @@ const AdminSettings = () => {
 
                     <SubSection>Export Collection</SubSection>
                     <Description>
-                        Export each collection individually as a CSV download.
+                        Export each collection individually as a CSV download. Export Final Results
+                        downloads one Excel workbook with Overall results and a tab for each
+                        configured track.
+                        Track tabs show star standings, not selected winners.
                     </Description>
-                    <div className="flex flex-col lg:flex-row mt-2 lg:mt-0 gap-4">
+                    <div className="flex flex-col lg:flex-row lg:flex-wrap mt-2 lg:mt-0 gap-4">
                         <SettingsButton
                             onClick={() => exportCsv('judges')}
                             className="my-0 lg:my-2"
@@ -991,6 +1022,13 @@ const AdminSettings = () => {
                             className="my-0 lg:my-2"
                         >
                             Export Rankings
+                        </SettingsButton>
+                        <SettingsButton
+                            onClick={exportFinalResults}
+                            disabled={exportingResults}
+                            className="my-0 lg:my-2"
+                        >
+                            {exportingResults ? 'Exporting Results…' : 'Export Final Results'}
                         </SettingsButton>
                     </div>
                 </Card>

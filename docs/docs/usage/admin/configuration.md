@@ -57,12 +57,21 @@ In this section, you can toggle the multi-group judging and track judging option
 
 ### Export Data
 
-This section allows you to export data from Jury as a CSV. There are 4 groupings to export:
+This section allows you to export data from Jury. The following exports are available:
 
 - **Export Judges** - Exports all judges
 - **Export Projects** - Exports all projects
 - **Export Rankings** - Exports only the judges and their individual rankings of projects
 - **Export by Challenges** - Exports a zip file, with each CSV file containing only the projects that submitted to a specific challenge; each CSV will be titled with that challenge name
+
+### Export Final Results
+
+In **Settings → Export Data**, click **Export Final Results** to download an `.xlsx` workbook. The **Overall** tab contains aggregated scores in descending order. Each configured track gets its own tab with opted-in projects, sorted by that track’s stars. Track star standings support deliberation; they do not select winners.
+
+Tabs include project numbers, names, scores or stars, category-specific view counts, room/group, active/hidden status, and Devpost URLs. Equal scores or stars share a place (1, 1, 3); project number orders tied rows without breaking the tie. Hidden projects are included and marked. Empty tracks still have a tab. Long or invalid Excel tab labels are shortened, with the full category name inside the sheet.
+
+This is a read-only snapshot of current results at download time. Pause judging and let judges finish updating their rankings before downloading the final event results. Exporting does not stop judging or change scores.
+
 
 ### Reset Data
 

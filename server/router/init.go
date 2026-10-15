@@ -133,6 +133,7 @@ func NewRouter(db *mongo.Database, logger *logging.Logger) *gin.Engine {
 	adminRouter.GET("/admin/export/projects", ExportProjects)
 	adminRouter.GET("/admin/export/challenges", ExportProjectsByChallenge)
 	adminRouter.GET("/admin/export/rankings", ExportRankings)
+	adminRouter.GET("/admin/export/final-results", ExportFinalResults)
 
 	// Admin panel - table actions
 	adminRouter.PUT("/judge/hide/:id", HideJudge)
