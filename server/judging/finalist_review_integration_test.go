@@ -104,6 +104,35 @@ func TestFinalistReviewAssignmentsWithMongo(t *testing.T) {
 		}
 	}
 	t.Run("unseen first and room restriction", func(t *testing.T) { reset(ordinary, finalist, unseen, otherRoom, hidden); assertPick(unseen) })
+	t.Run("configured second view before finalist", func(t *testing.T) {
+		settings.MinViews = 2
+		defer func() { settings.MinViews = 1 }()
+		reset(ordinary, finalist, otherRoom)
+		assertPick(ordinary)
+		if judge.Group != 0 {
+			t.Fatal("left room before local minimum coverage")
+		}
+	})
+	t.Run("minimum met releases finalist", func(t *testing.T) {
+		settings.MinViews = 2
+		defer func() { settings.MinViews = 1 }()
+		covered := project("covered", 2, false, 0)
+		reset(covered, finalist, otherRoom)
+		assertPick(finalist)
+	})
+	t.Run("seen under-covered project stays excluded", func(t *testing.T) {
+		settings.MinViews = 2
+		defer func() { settings.MinViews = 1 }()
+		reset(ordinary, finalist)
+		judge.SeenProjects = []models.JudgedProject{{ProjectId: ordinary.Id}}
+		assertPick(finalist)
+	})
+	t.Run("zero minimum allows finalist before unseen", func(t *testing.T) {
+		settings.MinViews = 0
+		defer func() { settings.MinViews = 1 }()
+		reset(unseen, finalist)
+		assertPick(finalist)
+	})
 	t.Run("finalist overrides lowest view filter", func(t *testing.T) {
 		reset(ordinary, finalist, otherRoom)
 		assertPick(finalist)
