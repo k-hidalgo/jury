@@ -6,10 +6,12 @@ import (
 	"crypto/tls"
 	"fmt"
 	"html/template"
+	"mime"
 	"net"
 	"net/smtp"
 	"server/config"
 	"server/models"
+	"strings"
 	"time"
 
 	"github.com/sendgrid/sendgrid-go"
@@ -53,10 +55,10 @@ func SendJudgeEmail(judge *models.Judge, hostname string) error {
 	// Message body
 	var body bytes.Buffer
 	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-	body.Write([]byte(fmt.Sprintf("Subject: Jury Judging Platform [%s] \n%s\n\n", appName, mimeHeaders)))
+	body.Write([]byte(fmt.Sprintf("Subject: %s\n%s\n\n", mime.QEncoding.Encode("UTF-8", judgeEmailSubject(appName, judge.Track)), mimeHeaders)))
 
 	// Fill Template
-	html, err := FillTemplate(judge.Name, hostname, judge.Code, appName)
+	html, err := FillTemplate(judge.Name, hostname, judge.Code, appName, judge.Track)
 	if err != nil {
 		return err
 	}
@@ -68,7 +70,7 @@ func SendJudgeEmail(judge *models.Judge, hostname string) error {
 }
 
 // FillTemplate fills the email template with the given data
-func FillTemplate(name string, baseUrl string, code string, appName string) ([]byte, error) {
+func FillTemplate(name string, baseUrl string, code string, appName string, track string) ([]byte, error) {
 	var body bytes.Buffer
 
 	t, err := template.ParseFiles("email.html")
@@ -76,13 +78,14 @@ func FillTemplate(name string, baseUrl string, code string, appName string) ([]b
 		return nil, err
 	}
 
-	t.Execute(&body, struct {
+	err = t.Execute(&body, struct {
 		Name      string
 		BaseUrl   string
 		CodeLeft  string
 		CodeRight string
 		Code      string
 		AppName   string
+		Category  string
 	}{
 		Name:      name,
 		BaseUrl:   baseUrl,
@@ -90,9 +93,27 @@ func FillTemplate(name string, baseUrl string, code string, appName string) ([]b
 		CodeRight: code[4:],
 		Code:      code,
 		AppName:   appName,
+		Category:  judgingCategory(track),
 	})
 
+	if err != nil {
+		return nil, err
+	}
 	return body.Bytes(), nil
+}
+
+func judgingCategory(track string) string {
+	if strings.TrimSpace(track) == "" {
+		return "Overall Judging"
+	}
+	return track
+}
+
+// Both email providers use the same inbox label. Strip line breaks from header
+// values; SMTP encodes this UTF-8 subject as MIME encoded words.
+func judgeEmailSubject(appName, track string) string {
+	clean := func(value string) string { return strings.Join(strings.Fields(value), " ") }
+	return fmt.Sprintf("%s — Judging: %s", clean(appName), clean(judgingCategory(track)))
 }
 
 // Send email with Sendgrid
@@ -100,10 +121,10 @@ func sendgridEmail(sendgridApiKey string, judge *models.Judge, hostname string) 
 	appName := config.GetEnv("VITE_JURY_NAME")
 
 	from := mail.NewEmail(config.GetEnv("EMAIL_FROM_NAME"), config.GetEnv("EMAIL_FROM"))
-	subject := "Jury Judging Platform [" + appName + "]"
+	subject := judgeEmailSubject(appName, judge.Track)
 	to := mail.NewEmail(judge.Name, judge.Email)
 
-	htmlContent, err := FillTemplate(judge.Name, hostname, judge.Code, appName)
+	htmlContent, err := FillTemplate(judge.Name, hostname, judge.Code, appName, judge.Track)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,9 @@
     <body>
         <table
             style="
-                width: 600px;
+                width: 100%;
+                max-width: 600px;
+                table-layout: fixed;
                 margin-left: auto;
                 margin-right: auto;
                 text-align: center;
@@ -29,6 +31,9 @@
                     <h2 style="font-weight: bold; font-size: 16px; margin: 0px; color: #00ace6">
                         {{.AppName}}
                     </h2>
+                    <p style="font-weight: bold; font-size: 18px; margin: 12px 0 0; overflow-wrap: break-word; word-wrap: break-word;">
+                        Your judging category: {{.Category}}
+                    </p>
                     <p style="text-align: left">
                         Hi {{.Name}}! Thank you for volunteering to help judge our hackathon. To
                         access the judging platform, click the button below to start judging. If you
@@ -41,6 +46,10 @@
                     <p style="font-weight: bold; font-size: 32px; color: #657985; margin: 0px">
                         <span style="margin-right: 1px;">{{.CodeLeft}}</span>
                         <span style="margin-left: 1px;">{{.CodeRight}}</span>
+                    </p>
+                    <p style="text-align: left">
+                        This login code is for the category shown above. If you’re judging another
+                        category, use its separate invitation.
                     </p>
                     <p style="text-align: left">
                         Please do not share the link or code with anyone else as it is unique to

@@ -12,6 +12,8 @@ Just like accessing the [Add Projects](/docs/usage/admin/add-projects) page, go 
 
 There are also 3 ways to add judges to Jury, but we recommend using the QR code method. You may also add judges individually or through a CSV upload.
 
+Invitations identify the account's judging category in the subject and beneath the event name. General accounts say **Overall Judging**; track accounts show their track name. The **Start Judging** button and login code belong to that specific account. Use the separate invitation when switching categories.
+
 ## QR Code
 
 The easiest way to add judges to Jury is using the QR code. This method works best with a dedicated **judging orientation** during your hackathon. During a judging orientation, judges will gather in a room and organizers will explain how judging will work (explain the expo-style, criteria for judging projects, and answer any questions they have). With Jury, you should also add judges to the system at this time. With all the judges in one room, the easiest way to add them is by showing a QR code on the screen. Once judges scan this QR code, they can add themselves to the system (by entering their name and email).
