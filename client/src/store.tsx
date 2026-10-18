@@ -25,9 +25,9 @@ const useAdminStore = create<AdminStore>()((set) => ({
 
     fetchStats: async () => {
         const selectedTrack = useOptionsStore.getState().selectedTrack;
-        const slash = selectedTrack === '' ? '' : '/';
-        const statsRes = await getRequest<Stats>(`/admin/stats${slash}${selectedTrack}`, 'admin');
-        if (statsRes.status !== 200) {
+        const query = selectedTrack === '' ? '' : `?track=${encodeURIComponent(selectedTrack)}`;
+        const statsRes = await getRequest<Stats>(`/admin/stats${query}`, 'admin');
+        if (statsRes.status !== 200 || statsRes.error || !statsRes.data) {
             errorAlert(statsRes);
             return;
         }
