@@ -53,13 +53,13 @@ func AdminAuthenticated(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"ok": 1})
 }
 
-// GET /admin/stats - GetAdminStats returns stats about the system
+// GET /admin/stats?track=... - GetAdminStats returns overall or track stats
 func GetAdminStats(ctx *gin.Context) {
 	// Get the state from the context
 	state := GetState(ctx)
 
 	// Aggregate the stats
-	stats, err := database.AggregateStats(state.Db, "")
+	stats, err := database.AggregateStats(state.Db, ctx.Query("track"))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "error aggregating stats: " + err.Error()})
 		return
