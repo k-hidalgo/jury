@@ -18,14 +18,14 @@ const ChallengeBlock = ({ excludedTracks = [] }: ChallengeBlockProps) => {
                 return;
             }
 
-            setChallenges(res.data as string[]);
+            setChallenges((res.data as string[] | null) ?? []);
         }
 
         fetchData();
     }, []);
 
     const visibleChallenges = challenges
-        .filter((name) => !excludedTracks.includes(name))
+        .filter((name) => !(excludedTracks ?? []).includes(name))
         .sort((a, b) =>
             a.localeCompare(b, 'en', { sensitivity: 'base' }) ||
             a.localeCompare(b, 'en')
