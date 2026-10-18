@@ -298,7 +298,7 @@ func GetChallenges(db *mongo.Database, ctx context.Context) ([]string, error) {
 	}
 
 	// Convert the map to a list
-	var challengeList []string
+	challengeList := make([]string, 0, len(challenges))
 	for challenge := range challenges {
 		challengeList = append(challengeList, challenge)
 	}
